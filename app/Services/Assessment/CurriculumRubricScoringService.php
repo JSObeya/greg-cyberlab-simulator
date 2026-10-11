@@ -55,6 +55,18 @@ class CurriculumRubricScoringService
             return $this->evaluateLaboratory10($attempt, $submissionData);
         }
 
+        if ($lab->slug === 'lab-11-security-log-analysis' || $lab->id === 11) {
+            return $this->evaluateLaboratory11($attempt, $submissionData);
+        }
+
+        if ($lab->slug === 'lab-12-packet-capture-interpretation' || $lab->id === 12) {
+            return $this->evaluateLaboratory12($attempt, $submissionData);
+        }
+
+        if ($lab->slug === 'lab-13-web-request-http-header-inspection' || $lab->id === 13) {
+            return $this->evaluateLaboratory13($attempt, $submissionData);
+        }
+
         // Generic fallback for other labs
         return $this->evaluateGenericRubric($attempt, $submissionData);
     }
@@ -656,6 +668,154 @@ class CurriculumRubricScoringService
         // 5. Change Record (10 pts)
         $change = $data['change_record'] ?? '';
         $scores['change_record'] = strlen(trim($change)) >= 15 ? 10 : 5;
+
+        $total = array_sum($scores);
+        return [
+            'scores' => $scores,
+            'total_score' => $total,
+            'is_passed' => $total >= 70,
+            'feedback' => $feedback,
+            'passing_score' => 70,
+        ];
+    }
+
+    /**
+     * Laboratory 11 100-point Rubric: Security Log Analysis (Pass: 70%)
+     * Rubric: Filtering (20), Correlation (25), Timeline accuracy (20), Finding quality (20), Response recommendations (15)
+     */
+    protected function evaluateLaboratory11(Attempt $attempt, array $data): array
+    {
+        $scores = [];
+        $feedback = [];
+
+        // 1. Filtering (20 pts: isolation of auth vs web events)
+        $filter = $data['log_filtering'] ?? [];
+        $fScore = 0;
+        if (! empty($filter['failed_ssh_count']) && (int)$filter['failed_ssh_count'] >= 3) $fScore += 10;
+        if (! empty($filter['filter_syntax_used'])) $fScore += 10;
+        $scores['log_filtering'] = $fScore;
+
+        // 2. Correlation (25 pts: correlating IP across logs)
+        $corr = $data['log_correlation'] ?? [];
+        $cScore = 0;
+        if (! empty($corr['attacker_ip']) && str_contains($corr['attacker_ip'], '192.168.50.120')) $cScore += 15;
+        if (! empty($corr['compromised_user']) && strtolower(trim($corr['compromised_user'])) === 'deploy') $cScore += 10;
+        $scores['correlation'] = $cScore;
+
+        // 3. Timeline Accuracy (20 pts)
+        $timeline = $data['incident_timeline'] ?? [];
+        $scores['timeline_accuracy'] = count($timeline) >= 2 ? 20 : 10;
+
+        // 4. Finding Quality (20 pts)
+        $finding = $data['finding_statement'] ?? '';
+        $scores['finding_quality'] = strlen(trim($finding)) >= 15 ? 20 : 10;
+
+        // 5. Response Recommendations (15 pts)
+        $recs = $data['response_recommendations'] ?? [];
+        $rScore = 0;
+        if (! empty($recs['disable_password_auth'])) $rScore += 5;
+        if (! empty($recs['rotate_credentials'])) $rScore += 5;
+        if (! empty($recs['install_fail2ban'])) $rScore += 5;
+        $scores['response_recommendations'] = $rScore;
+
+        $total = array_sum($scores);
+        return [
+            'scores' => $scores,
+            'total_score' => $total,
+            'is_passed' => $total >= 70,
+            'feedback' => $feedback,
+            'passing_score' => 70,
+        ];
+    }
+
+    /**
+     * Laboratory 12 100-point Rubric: Packet Capture Interpretation (Pass: 70%)
+     * Rubric: Filtering (20), Protocol sequence (25), Exposure identification (25), Evidence citation (15), Remediation & limits (15)
+     */
+    protected function evaluateLaboratory12(Attempt $attempt, array $data): array
+    {
+        $scores = [];
+        $feedback = [];
+
+        // 1. Filtering (20 pts: frame identification)
+        $filter = $data['frame_filtering'] ?? [];
+        $fScore = 0;
+        if (! empty($filter['target_frame_no']) && (int)$filter['target_frame_no'] === 4) $fScore += 10;
+        if (! empty($filter['protocol_filtered']) && in_array(strtoupper($filter['protocol_filtered']), ['HTTP', 'TCP'])) $fScore += 10;
+        $scores['filtering'] = $fScore;
+
+        // 2. Protocol Sequence (25 pts: 3-way handshake SYN, SYN-ACK, ACK)
+        $seq = $data['handshake_sequence'] ?? [];
+        $sScore = 0;
+        if (! empty($seq['syn_detected'])) $sScore += 8;
+        if (! empty($seq['syn_ack_detected'])) $sScore += 8;
+        if (! empty($seq['ack_detected'])) $sScore += 9;
+        $scores['protocol_sequence'] = $sScore;
+
+        // 3. Exposure Identification (25 pts: cleartext password)
+        $leak = $data['intercepted_credentials'] ?? [];
+        $lScore = 0;
+        if (! empty($leak['username']) && strtolower(trim($leak['username'])) === 'admin') $lScore += 10;
+        if (! empty($leak['password']) && trim($leak['password']) === 'AdminSecret2026!') $lScore += 15;
+        $scores['exposure_identification'] = $lScore;
+
+        // 4. Evidence Citation (15 pts: frame citation & timestamps)
+        $citation = $data['evidence_citation'] ?? '';
+        $scores['evidence_citation'] = strlen(trim($citation)) >= 10 ? 15 : 7;
+
+        // 5. Remediation & Limits (15 pts: HTTPS / TLS enforcement)
+        $remed = $data['remediation_strategy'] ?? '';
+        $scores['remediation_and_limits'] = strlen(trim($remed)) >= 15 ? 15 : 7;
+
+        $total = array_sum($scores);
+        return [
+            'scores' => $scores,
+            'total_score' => $total,
+            'is_passed' => $total >= 70,
+            'feedback' => $feedback,
+            'passing_score' => 70,
+        ];
+    }
+
+    /**
+     * Laboratory 13 100-point Rubric: Web Request & HTTP Security Headers (Pass: 70%)
+     * Rubric: Request interpretation (20), Cookie analysis (25), Header analysis (25), Prioritisation (15), Verification tests (15)
+     */
+    protected function evaluateLaboratory13(Attempt $attempt, array $data): array
+    {
+        $scores = [];
+        $feedback = [];
+
+        // 1. Request Interpretation (20 pts)
+        $req = $data['request_interpretation'] ?? [];
+        $rScore = 0;
+        if (! empty($req['http_status_code']) && (int)$req['http_status_code'] === 200) $rScore += 10;
+        if (! empty($req['server_banner_identified'])) $rScore += 10;
+        $scores['request_interpretation'] = $rScore;
+
+        // 2. Cookie Analysis (25 pts: HttpOnly, Secure, SameSite)
+        $cookie = $data['cookie_security_analysis'] ?? [];
+        $cScore = 0;
+        if (! empty($cookie['missing_httponly'])) $cScore += 9;
+        if (! empty($cookie['missing_secure'])) $cScore += 8;
+        if (! empty($cookie['missing_samesite'])) $cScore += 8;
+        $scores['cookie_analysis'] = $cScore;
+
+        // 3. Header Analysis (25 pts: CSP, X-Frame-Options, HSTS)
+        $headers = $data['missing_security_headers'] ?? [];
+        $hScore = 0;
+        if (! empty($headers['missing_csp'])) $hScore += 9;
+        if (! empty($headers['missing_x_frame_options'])) $hScore += 8;
+        if (! empty($headers['missing_hsts'])) $hScore += 8;
+        $scores['header_analysis'] = $hScore;
+
+        // 4. Prioritisation (15 pts)
+        $priority = $data['remediation_priority'] ?? '';
+        $scores['prioritisation'] = strlen(trim($priority)) >= 15 ? 15 : 7;
+
+        // 5. Verification Tests (15 pts: verification command)
+        $testCmd = $data['verification_test_command'] ?? '';
+        $scores['verification_tests'] = (str_contains(strtolower($testCmd), 'curl') || strlen(trim($testCmd)) >= 10) ? 15 : 8;
 
         $total = array_sum($scores);
         return [

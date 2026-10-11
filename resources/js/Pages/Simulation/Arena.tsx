@@ -26,6 +26,9 @@ import KaliTerminalSimulator from './Workbenches/KaliTerminalSimulator';
 import NetworkFoundationsConsole from './Workbenches/NetworkFoundationsConsole';
 import AuthorisedDiscoveryConsole from './Workbenches/AuthorisedDiscoveryConsole';
 import FirewallPolicySimulator from './Workbenches/FirewallPolicySimulator';
+import LogInvestigationWorkbench from './Workbenches/LogInvestigationWorkbench';
+import PacketAnalysisWorkbench from './Workbenches/PacketAnalysisWorkbench';
+import WebRequestInspector from './Workbenches/WebRequestInspector';
 
 interface ArenaProps {
     laboratory: any;
@@ -209,6 +212,36 @@ export default function Arena({ laboratory, attempt }: ArenaProps) {
         if (laboratory.primary_workspace === 'firewall_simulator' || laboratory.slug === 'lab-10-firewall-rule-analysis-exposure' || laboratory.id === 10) {
             return (
                 <FirewallPolicySimulator
+                    laboratory={laboratory}
+                    attempt={attempt}
+                    onReset={handleResetAttempt}
+                />
+            );
+        }
+
+        if (laboratory.primary_workspace === 'log_investigation' || laboratory.slug === 'lab-11-security-log-analysis' || laboratory.id === 11) {
+            return (
+                <LogInvestigationWorkbench
+                    laboratory={laboratory}
+                    attempt={attempt}
+                    onReset={handleResetAttempt}
+                />
+            );
+        }
+
+        if (laboratory.primary_workspace === 'packet_workbench' || laboratory.slug === 'lab-12-packet-capture-interpretation' || laboratory.id === 12) {
+            return (
+                <PacketAnalysisWorkbench
+                    laboratory={laboratory}
+                    attempt={attempt}
+                    onReset={handleResetAttempt}
+                />
+            );
+        }
+
+        if (laboratory.primary_workspace === 'web_inspector' || laboratory.slug === 'lab-13-web-request-http-header-inspection' || laboratory.id === 13) {
+            return (
+                <WebRequestInspector
                     laboratory={laboratory}
                     attempt={attempt}
                     onReset={handleResetAttempt}
