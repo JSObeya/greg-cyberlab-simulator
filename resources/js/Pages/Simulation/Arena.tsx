@@ -17,6 +17,11 @@ import {
 } from 'lucide-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import OrientationAndSafetyConsole from './Workbenches/OrientationAndSafetyConsole';
+import RiskAssessmentBoard from './Workbenches/RiskAssessmentBoard';
+import IdentitySecurityClinic from './Workbenches/IdentitySecurityClinic';
+import PhishingAnalysisWorkbench from './Workbenches/PhishingAnalysisWorkbench';
+import UrlInvestigationDesk from './Workbenches/UrlInvestigationDesk';
+import IntegrityVerificationConsole from './Workbenches/IntegrityVerificationConsole';
 
 interface ArenaProps {
     laboratory: any;
@@ -24,9 +29,9 @@ interface ArenaProps {
 }
 
 export default function Arena({ laboratory, attempt }: ArenaProps) {
-    const isOrientationConsole = laboratory.primary_workspace === 'orientation_console' || laboratory.id === 1;
+    const hasInteractiveWorkbench = Boolean(laboratory.primary_workspace) || laboratory.category === 'phishing' || laboratory.category === 'logs' || laboratory.category === 'packets' || laboratory.category === 'soc';
     const [activeTab, setActiveTab] = useState<'briefing' | 'terminal' | 'workbench' | 'assessment'>(
-        isOrientationConsole ? 'workbench' : 'briefing'
+        hasInteractiveWorkbench ? 'workbench' : 'briefing'
     );
 
     // Terminal State
@@ -110,6 +115,56 @@ export default function Arena({ laboratory, attempt }: ArenaProps) {
         if (laboratory.primary_workspace === 'orientation_console' || laboratory.slug === 'lab-01-orientation-rules' || laboratory.id === 1) {
             return (
                 <OrientationAndSafetyConsole
+                    laboratory={laboratory}
+                    attempt={attempt}
+                    onReset={handleResetAttempt}
+                />
+            );
+        }
+
+        if (laboratory.primary_workspace === 'risk_board' || laboratory.slug === 'lab-02-assets-threats-vulnerabilities-risk' || laboratory.id === 2) {
+            return (
+                <RiskAssessmentBoard
+                    laboratory={laboratory}
+                    attempt={attempt}
+                    onReset={handleResetAttempt}
+                />
+            );
+        }
+
+        if (laboratory.primary_workspace === 'identity_clinic' || laboratory.slug === 'lab-03-strong-passwords-and-mfa' || laboratory.id === 3) {
+            return (
+                <IdentitySecurityClinic
+                    laboratory={laboratory}
+                    attempt={attempt}
+                    onReset={handleResetAttempt}
+                />
+            );
+        }
+
+        if (laboratory.primary_workspace === 'phishing_workbench' || laboratory.slug === 'lab-04-recognising-phishing-emails' || laboratory.id === 4) {
+            return (
+                <PhishingAnalysisWorkbench
+                    laboratory={laboratory}
+                    attempt={attempt}
+                    onReset={handleResetAttempt}
+                />
+            );
+        }
+
+        if (laboratory.primary_workspace === 'url_desk' || laboratory.slug === 'lab-05-safe-browsing-and-suspicious-urls' || laboratory.id === 5) {
+            return (
+                <UrlInvestigationDesk
+                    laboratory={laboratory}
+                    attempt={attempt}
+                    onReset={handleResetAttempt}
+                />
+            );
+        }
+
+        if (laboratory.primary_workspace === 'integrity_console' || laboratory.slug === 'lab-06-file-hashes-and-integrity-verification' || laboratory.id === 6) {
+            return (
+                <IntegrityVerificationConsole
                     laboratory={laboratory}
                     attempt={attempt}
                     onReset={handleResetAttempt}

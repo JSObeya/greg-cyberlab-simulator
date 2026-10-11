@@ -122,6 +122,16 @@ class AttemptWorkflowService
      */
     public function submitAttempt(Attempt $attempt, array $submissionData): Attempt
     {
+        // Decode JSON-encoded fields that may arrive from multipart/form-data
+        foreach ($submissionData as $key => $value) {
+            if (is_string($value) && in_array(substr(trim($value), 0, 1), ['{', '['])) {
+                $decoded = json_decode($value, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $submissionData[$key] = $decoded;
+                }
+            }
+        }
+
         $evaluation = $this->scoringService->evaluateLabAttempt($attempt, $submissionData);
 
         $attempt->update([
