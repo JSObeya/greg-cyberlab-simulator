@@ -205,6 +205,11 @@ export default function Authenticated({
                             </ResponsiveNavLink>
                         )}
                         {(user.role === 'admin' || user.role === 'super_admin') && (
+                            <ResponsiveNavLink href={route('admin.users.index')} active={route().current('admin.users.*')}>
+                                Users
+                            </ResponsiveNavLink>
+                        )}
+                        {(user.role === 'admin' || user.role === 'super_admin') && (
                             <ResponsiveNavLink href={route('admin.audit-logs')} active={route().current('admin.audit-logs')}>
                                 Audit Trail
                             </ResponsiveNavLink>
