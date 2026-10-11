@@ -7,6 +7,7 @@ use App\Http\Controllers\CourseController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SimulationController;
+use App\Http\Controllers\UserController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -50,6 +51,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // System Audit Trail Viewer
     Route::get('/admin/audit-logs', [AuditLogController::class, 'index'])->name('admin.audit-logs');
+
+    // User & Credential Management (Admins)
+    Route::get('/admin/users', [UserController::class, 'index'])->name('admin.users.index');
+    Route::post('/admin/users', [UserController::class, 'store'])->name('admin.users.store');
+    Route::put('/admin/users/{user}', [UserController::class, 'update'])->name('admin.users.update');
+    Route::delete('/admin/users/{user}', [UserController::class, 'destroy'])->name('admin.users.destroy');
 
     // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

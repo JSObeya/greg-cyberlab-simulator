@@ -86,6 +86,16 @@ export default function Authenticated({
 
                                 {(user.role === 'admin' || user.role === 'super_admin') && (
                                     <NavLink
+                                        href={route('admin.users.index')}
+                                        active={route().current('admin.users.*')}
+                                        className="text-xs font-bold dark:text-slate-200"
+                                    >
+                                        Users
+                                    </NavLink>
+                                )}
+
+                                {(user.role === 'admin' || user.role === 'super_admin') && (
+                                    <NavLink
                                         href={route('admin.audit-logs')}
                                         active={route().current('admin.audit-logs')}
                                         className="text-xs font-bold dark:text-slate-200"
