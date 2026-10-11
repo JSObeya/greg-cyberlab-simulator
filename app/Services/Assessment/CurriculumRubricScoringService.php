@@ -67,6 +67,14 @@ class CurriculumRubricScoringService
             return $this->evaluateLaboratory13($attempt, $submissionData);
         }
 
+        if ($lab->slug === 'lab-14-vulnerability-scoring-prioritization' || $lab->id === 14) {
+            return $this->evaluateLaboratory14($attempt, $submissionData);
+        }
+
+        if ($lab->slug === 'lab-15-soc-alert-triage-incident-response' || $lab->id === 15) {
+            return $this->evaluateLaboratory15($attempt, $submissionData);
+        }
+
         // Generic fallback for other labs
         return $this->evaluateGenericRubric($attempt, $submissionData);
     }
@@ -816,6 +824,112 @@ class CurriculumRubricScoringService
         // 5. Verification Tests (15 pts: verification command)
         $testCmd = $data['verification_test_command'] ?? '';
         $scores['verification_tests'] = (str_contains(strtolower($testCmd), 'curl') || strlen(trim($testCmd)) >= 10) ? 15 : 8;
+
+        $total = array_sum($scores);
+        return [
+            'scores' => $scores,
+            'total_score' => $total,
+            'is_passed' => $total >= 70,
+            'feedback' => $feedback,
+            'passing_score' => 70,
+        ];
+    }
+
+    /**
+     * Laboratory 14 100-point Rubric: Vulnerability Assessment & Remediation (Pass: 70%)
+     * Rubric: Finding validation (20), Contextual prioritisation (30), Treatment plan (25), Verification steps (15), Management summary (10)
+     */
+    protected function evaluateLaboratory14(Attempt $attempt, array $data): array
+    {
+        $scores = [];
+        $feedback = [];
+
+        // 1. Finding Validation (20 pts: identifying top vulnerabilities)
+        $val = $data['finding_validation'] ?? [];
+        $vScore = 0;
+        if (! empty($val['vsftpd_backdoor_verified'])) $vScore += 10;
+        if (! empty($val['apache_traversal_verified'])) $vScore += 10;
+        $scores['finding_validation'] = $vScore;
+
+        // 2. Contextual Prioritisation (30 pts: Asset criticality + exploitability)
+        $prio = $data['contextual_prioritisation'] ?? [];
+        $pScore = 0;
+        if (! empty($prio['critical_host_ranked_highest'])) $pScore += 15;
+        if (! empty($prio['exposure_context_factored'])) $pScore += 15;
+        $scores['contextual_prioritisation'] = $pScore;
+
+        // 3. Treatment Plan (25 pts: Remediation actions)
+        $plan = $data['treatment_plan'] ?? [];
+        $plScore = 0;
+        if (! empty($plan['patch_vsftpd_remediation'])) $plScore += 9;
+        if (! empty($plan['upgrade_apache_remediation'])) $plScore += 8;
+        if (! empty($plan['compensating_control'])) $plScore += 8;
+        $scores['treatment_plan'] = $plScore;
+
+        // 4. Verification Steps (15 pts: post-patch scan verification)
+        $verif = $data['verification_steps'] ?? '';
+        $scores['verification_steps'] = strlen(trim($verif)) >= 15 ? 15 : 7;
+
+        // 5. Management Summary (10 pts: executive summary)
+        $summary = $data['management_summary'] ?? '';
+        $scores['management_summary'] = strlen(trim($summary)) >= 15 ? 10 : 5;
+
+        $total = array_sum($scores);
+        return [
+            'scores' => $scores,
+            'total_score' => $total,
+            'is_passed' => $total >= 70,
+            'feedback' => $feedback,
+            'passing_score' => 70,
+        ];
+    }
+
+    /**
+     * Laboratory 15 100-point Rubric: SOC Alert Triage & Incident Capstone (Pass: 70%)
+     * Rubric: Alert triage (15), Scope & severity (15), Timeline (20), Containment (15), Evidence handling (10), Recovery plan (10), Incident report (15)
+     */
+    protected function evaluateLaboratory15(Attempt $attempt, array $data): array
+    {
+        $scores = [];
+        $feedback = [];
+
+        // 1. Alert Triage (15 pts: prioritizing critical alert)
+        $triage = $data['alert_triage'] ?? [];
+        $tScore = 0;
+        if (! empty($triage['critical_alert_isolated'])) $tScore += 8;
+        if (! empty($triage['false_positive_eliminated'])) $tScore += 7;
+        $scores['alert_triage'] = $tScore;
+
+        // 2. Scope & Severity (15 pts)
+        $scopeSev = $data['scope_and_severity'] ?? [];
+        $sScore = 0;
+        if (! empty($scopeSev['compromised_host_identified'])) $sScore += 8;
+        if (! empty($scopeSev['severity_rating_assigned'])) $sScore += 7;
+        $scores['scope_and_severity'] = $sScore;
+
+        // 3. Attack Timeline (20 pts: chronological attack sequence)
+        $timeline = $data['incident_timeline'] ?? [];
+        $scores['timeline'] = count($timeline) >= 3 ? 20 : 10;
+
+        // 4. Containment (15 pts: immediate isolation cards)
+        $containment = $data['containment_actions'] ?? [];
+        $cScore = 0;
+        if (! empty($containment['host_network_isolated'])) $cScore += 5;
+        if (! empty($containment['compromised_account_disabled'])) $cScore += 5;
+        if (! empty($containment['firewall_block_attacker_ip'])) $cScore += 5;
+        $scores['containment'] = $cScore;
+
+        // 5. Evidence Handling (10 pts: chain of custody & memory/log capture)
+        $evidence = $data['evidence_preservation'] ?? '';
+        $scores['evidence_handling'] = strlen(trim($evidence)) >= 10 ? 10 : 5;
+
+        // 6. Recovery Plan (10 pts: post-incident restoration steps)
+        $recovery = $data['recovery_plan'] ?? '';
+        $scores['recovery_plan'] = strlen(trim($recovery)) >= 10 ? 10 : 5;
+
+        // 7. Incident Report (15 pts: formal executive debrief)
+        $report = $data['incident_report'] ?? '';
+        $scores['incident_report'] = strlen(trim($report)) >= 15 ? 15 : 8;
 
         $total = array_sum($scores);
         return [

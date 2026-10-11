@@ -29,6 +29,8 @@ import FirewallPolicySimulator from './Workbenches/FirewallPolicySimulator';
 import LogInvestigationWorkbench from './Workbenches/LogInvestigationWorkbench';
 import PacketAnalysisWorkbench from './Workbenches/PacketAnalysisWorkbench';
 import WebRequestInspector from './Workbenches/WebRequestInspector';
+import VulnerabilityManagementBoard from './Workbenches/VulnerabilityManagementBoard';
+import SocIncidentResponseCenter from './Workbenches/SocIncidentResponseCenter';
 
 interface ArenaProps {
     laboratory: any;
@@ -242,6 +244,26 @@ export default function Arena({ laboratory, attempt }: ArenaProps) {
         if (laboratory.primary_workspace === 'web_inspector' || laboratory.slug === 'lab-13-web-request-http-header-inspection' || laboratory.id === 13) {
             return (
                 <WebRequestInspector
+                    laboratory={laboratory}
+                    attempt={attempt}
+                    onReset={handleResetAttempt}
+                />
+            );
+        }
+
+        if (laboratory.primary_workspace === 'vuln_board' || laboratory.slug === 'lab-14-vulnerability-scoring-prioritization' || laboratory.id === 14) {
+            return (
+                <VulnerabilityManagementBoard
+                    laboratory={laboratory}
+                    attempt={attempt}
+                    onReset={handleResetAttempt}
+                />
+            );
+        }
+
+        if (laboratory.primary_workspace === 'soc_center' || laboratory.slug === 'lab-15-soc-alert-triage-incident-response' || laboratory.id === 15) {
+            return (
+                <SocIncidentResponseCenter
                     laboratory={laboratory}
                     attempt={attempt}
                     onReset={handleResetAttempt}
