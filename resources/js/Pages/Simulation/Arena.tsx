@@ -22,6 +22,10 @@ import IdentitySecurityClinic from './Workbenches/IdentitySecurityClinic';
 import PhishingAnalysisWorkbench from './Workbenches/PhishingAnalysisWorkbench';
 import UrlInvestigationDesk from './Workbenches/UrlInvestigationDesk';
 import IntegrityVerificationConsole from './Workbenches/IntegrityVerificationConsole';
+import KaliTerminalSimulator from './Workbenches/KaliTerminalSimulator';
+import NetworkFoundationsConsole from './Workbenches/NetworkFoundationsConsole';
+import AuthorisedDiscoveryConsole from './Workbenches/AuthorisedDiscoveryConsole';
+import FirewallPolicySimulator from './Workbenches/FirewallPolicySimulator';
 
 interface ArenaProps {
     laboratory: any;
@@ -165,6 +169,46 @@ export default function Arena({ laboratory, attempt }: ArenaProps) {
         if (laboratory.primary_workspace === 'integrity_console' || laboratory.slug === 'lab-06-file-hashes-and-integrity-verification' || laboratory.id === 6) {
             return (
                 <IntegrityVerificationConsole
+                    laboratory={laboratory}
+                    attempt={attempt}
+                    onReset={handleResetAttempt}
+                />
+            );
+        }
+
+        if (laboratory.primary_workspace === 'linux_console' || laboratory.slug === 'lab-07-basic-linux-commands-kali-terminal' || laboratory.id === 7) {
+            return (
+                <KaliTerminalSimulator
+                    laboratory={laboratory}
+                    attempt={attempt}
+                    onReset={handleResetAttempt}
+                />
+            );
+        }
+
+        if (laboratory.primary_workspace === 'network_diagnostics' || laboratory.slug === 'lab-08-ip-addressing-ports-protocols' || laboratory.id === 8) {
+            return (
+                <NetworkFoundationsConsole
+                    laboratory={laboratory}
+                    attempt={attempt}
+                    onReset={handleResetAttempt}
+                />
+            );
+        }
+
+        if (laboratory.primary_workspace === 'port_scanner' || laboratory.slug === 'lab-09-simulated-host-discovery-service-id' || laboratory.id === 9) {
+            return (
+                <AuthorisedDiscoveryConsole
+                    laboratory={laboratory}
+                    attempt={attempt}
+                    onReset={handleResetAttempt}
+                />
+            );
+        }
+
+        if (laboratory.primary_workspace === 'firewall_simulator' || laboratory.slug === 'lab-10-firewall-rule-analysis-exposure' || laboratory.id === 10) {
+            return (
+                <FirewallPolicySimulator
                     laboratory={laboratory}
                     attempt={attempt}
                     onReset={handleResetAttempt}

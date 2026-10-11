@@ -39,6 +39,22 @@ class CurriculumRubricScoringService
             return $this->evaluateLaboratory6($attempt, $submissionData);
         }
 
+        if ($lab->slug === 'lab-07-basic-linux-commands-kali-terminal' || $lab->id === 7) {
+            return $this->evaluateLaboratory7($attempt, $submissionData);
+        }
+
+        if ($lab->slug === 'lab-08-ip-addressing-ports-protocols' || $lab->id === 8) {
+            return $this->evaluateLaboratory8($attempt, $submissionData);
+        }
+
+        if ($lab->slug === 'lab-09-simulated-host-discovery-service-id' || $lab->id === 9) {
+            return $this->evaluateLaboratory9($attempt, $submissionData);
+        }
+
+        if ($lab->slug === 'lab-10-firewall-rule-analysis-exposure' || $lab->id === 10) {
+            return $this->evaluateLaboratory10($attempt, $submissionData);
+        }
+
         // Generic fallback for other labs
         return $this->evaluateGenericRubric($attempt, $submissionData);
     }
@@ -432,6 +448,214 @@ class CurriculumRubricScoringService
         // 5. Recommended Action (10 pts)
         $action = $data['recommended_action'] ?? '';
         $scores['recommended_action'] = strlen(trim($action)) >= 10 ? 10 : 5;
+
+        $total = array_sum($scores);
+        return [
+            'scores' => $scores,
+            'total_score' => $total,
+            'is_passed' => $total >= 70,
+            'feedback' => $feedback,
+            'passing_score' => 70,
+        ];
+    }
+
+    /**
+     * Laboratory 7 100-point Rubric: Basic Linux Commands in Simulated Kali (Pass: 70%)
+     * Rubric: Navigation (20), File inspection (20), Log filtering (25), Hashing (15), Permission interpretation (10), Evidence selection (10)
+     */
+    protected function evaluateLaboratory7(Attempt $attempt, array $data): array
+    {
+        $scores = [];
+        $feedback = [];
+
+        // 1. Navigation (20 pts: pwd, ls, cd)
+        $navAnswers = $data['navigation_evidence'] ?? [];
+        $navScore = 0;
+        if (! empty($navAnswers['current_directory']) && in_array(trim($navAnswers['current_directory']), ['/home/analyst', '/home/analyst/audit_workspace'])) $navScore += 10;
+        if (! empty($navAnswers['located_workspace'])) $navScore += 10;
+        $scores['navigation'] = $navScore;
+
+        // 2. File Inspection (20 pts: cat, head, file)
+        $inspectAnswers = $data['file_inspection'] ?? [];
+        $iScore = 0;
+        if (! empty($inspectAnswers['flag_content']) && str_contains($inspectAnswers['flag_content'], 'FLAG{KALI_NAV_SUCCESS}')) $iScore += 10;
+        if (! empty($inspectAnswers['file_type_identified'])) $iScore += 10;
+        $scores['file_inspection'] = $iScore;
+
+        // 3. Log Filtering (25 pts: grep failed auth.log)
+        $logFilter = $data['log_filtering'] ?? [];
+        $lScore = 0;
+        if (! empty($logFilter['grep_pattern_used'])) $lScore += 10;
+        if (! empty($logFilter['failed_login_ip']) && str_contains($logFilter['failed_login_ip'], '192.168.50.')) $lScore += 15;
+        $scores['log_filtering'] = $lScore;
+
+        // 4. Hashing (15 pts: sha256sum)
+        $hashData = $data['hash_verification'] ?? [];
+        $hScore = 0;
+        if (! empty($hashData['computed_hash'])) $hScore += 15;
+        $scores['hashing'] = $hScore;
+
+        // 5. Permission Interpretation (10 pts)
+        $perms = $data['permissions_answer'] ?? '';
+        $scores['permission_interpretation'] = strlen(trim($perms)) >= 10 ? 10 : 5;
+
+        // 6. Evidence Selection (10 pts)
+        $evidence = $data['evidence_summary'] ?? '';
+        $scores['evidence_selection'] = strlen(trim($evidence)) >= 15 ? 10 : 5;
+
+        $total = array_sum($scores);
+        return [
+            'scores' => $scores,
+            'total_score' => $total,
+            'is_passed' => $total >= 70,
+            'feedback' => $feedback,
+            'passing_score' => 70,
+        ];
+    }
+
+    /**
+     * Laboratory 8 100-point Rubric: IP Addressing, Ports, Protocols & Services (Pass: 70%)
+     * Rubric: Addressing (25), Protocol mapping (20), Command interpretation (20), Exposure decisions (25), Explanation (10)
+     */
+    protected function evaluateLaboratory8(Attempt $attempt, array $data): array
+    {
+        $scores = [];
+        $feedback = [];
+
+        // 1. Addressing (25 pts: Subnet, Gateway, Broadcast)
+        $addr = $data['addressing_analysis'] ?? [];
+        $aScore = 0;
+        if (! empty($addr['workstation_ip']) && in_array(trim($addr['workstation_ip']), ['10.10.10.15', '192.168.50.15'])) $aScore += 10;
+        if (! empty($addr['subnet_mask']) && in_array(trim($addr['subnet_mask']), ['/24', '255.255.255.0'])) $aScore += 8;
+        if (! empty($addr['network_range'])) $aScore += 7;
+        $scores['addressing'] = $aScore;
+
+        // 2. Protocol Mapping (20 pts: 4 ports x 5 pts)
+        $protoMap = $data['protocol_mappings'] ?? [];
+        $pScore = 0;
+        if (($protoMap['22'] ?? '') === 'ssh' || ($protoMap['port_22'] ?? '') === 'ssh') $pScore += 5;
+        if (($protoMap['53'] ?? '') === 'dns' || ($protoMap['port_53'] ?? '') === 'dns') $pScore += 5;
+        if (($protoMap['80'] ?? '') === 'http' || ($protoMap['port_80'] ?? '') === 'http') $pScore += 5;
+        if (($protoMap['443'] ?? '') === 'https' || ($protoMap['port_443'] ?? '') === 'https') $pScore += 5;
+        $scores['protocol_mapping'] = $pScore;
+
+        // 3. Command Interpretation (20 pts: ss / netstat / ip)
+        $cmdInterp = $data['command_interpretation'] ?? [];
+        $cScore = 0;
+        if (! empty($cmdInterp['ssh_listening_detected'])) $cScore += 10;
+        if (! empty($cmdInterp['mysql_local_binding_detected'])) $cScore += 10;
+        $scores['command_interpretation'] = $cScore;
+
+        // 4. Exposure Decisions (25 pts)
+        $exposure = $data['exposure_decisions'] ?? [];
+        $eScore = 0;
+        if (! empty($exposure['external_ssh_policy'])) $eScore += 13;
+        if (! empty($exposure['mysql_localhost_only'])) $eScore += 12;
+        $scores['exposure_decisions'] = $eScore;
+
+        // 5. Technical Explanation (10 pts)
+        $explanation = $data['technical_explanation'] ?? '';
+        $scores['explanation'] = strlen(trim($explanation)) >= 15 ? 10 : 5;
+
+        $total = array_sum($scores);
+        return [
+            'scores' => $scores,
+            'total_score' => $total,
+            'is_passed' => $total >= 70,
+            'feedback' => $feedback,
+            'passing_score' => 70,
+        ];
+    }
+
+    /**
+     * Laboratory 9 100-point Rubric: Simulated Host Discovery & Services (Pass: 70%)
+     * Rubric: Scope compliance (25), Discovery interpretation (20), Service inventory (25), Unexpected exposure (20), Escalation note (10)
+     */
+    protected function evaluateLaboratory9(Attempt $attempt, array $data): array
+    {
+        $scores = [];
+        $feedback = [];
+
+        // 1. Scope Compliance (25 pts)
+        $scopeComp = $data['scope_compliance'] ?? [];
+        $sScore = 0;
+        if (! empty($scopeComp['in_scope_target_verified'])) $sScore += 15;
+        if (! empty($scopeComp['out_of_scope_avoided'])) $sScore += 10;
+        $scores['scope_compliance'] = $sScore;
+
+        // 2. Discovery Interpretation (20 pts: ping/nmap ping scan)
+        $discInterp = $data['discovery_interpretation'] ?? [];
+        $dScore = 0;
+        if (! empty($discInterp['live_hosts_count']) && (int)$discInterp['live_hosts_count'] >= 1) $dScore += 10;
+        if (! empty($discInterp['latency_or_status'])) $dScore += 10;
+        $scores['discovery_interpretation'] = $dScore;
+
+        // 3. Service Inventory (25 pts: open ports on target)
+        $services = $data['service_inventory'] ?? [];
+        $svcScore = 0;
+        if (! empty($services['ftp_service']) && str_contains(strtolower($services['ftp_service']), 'vsftpd')) $svcScore += 10;
+        if (! empty($services['http_service']) && str_contains(strtolower($services['http_service']), 'apache')) $svcScore += 10;
+        if (! empty($services['ssh_service'])) $svcScore += 5;
+        $scores['service_inventory'] = $svcScore;
+
+        // 4. Unexpected Exposure (20 pts: backdoor / legacy versions)
+        $unexp = $data['unexpected_exposure'] ?? [];
+        $uScore = 0;
+        if (! empty($unexp['backdoor_version_identified']) || ! empty($unexp['ftp_vulnerability_noted'])) $uScore += 20;
+        $scores['unexpected_exposure'] = $uScore;
+
+        // 5. Escalation Note (10 pts)
+        $escalation = $data['escalation_note'] ?? '';
+        $scores['escalation_note'] = strlen(trim($escalation)) >= 15 ? 10 : 5;
+
+        $total = array_sum($scores);
+        return [
+            'scores' => $scores,
+            'total_score' => $total,
+            'is_passed' => $total >= 70,
+            'feedback' => $feedback,
+            'passing_score' => 70,
+        ];
+    }
+
+    /**
+     * Laboratory 10 100-point Rubric: Firewall Rules & Service Exposure (Pass: 70%)
+     * Rubric: Traffic evaluation (25), Unsafe-Rule ID (25), Corrected policy (30), Testing (10), Change record (10)
+     */
+    protected function evaluateLaboratory10(Attempt $attempt, array $data): array
+    {
+        $scores = [];
+        $feedback = [];
+
+        // 1. Traffic Evaluation (25 pts)
+        $traffic = $data['traffic_evaluation'] ?? [];
+        $tScore = 0;
+        if (! empty($traffic['allow_http_inbound'])) $tScore += 9;
+        if (! empty($traffic['drop_telnet_inbound'])) $tScore += 8;
+        if (! empty($traffic['default_deny_enforced'])) $tScore += 8;
+        $scores['traffic_evaluation'] = $tScore;
+
+        // 2. Unsafe-Rule Identification (25 pts)
+        $unsafe = $data['unsafe_rules'] ?? [];
+        $uScore = 0;
+        if (! empty($unsafe['rule_exposed_rdp']) || in_array('rule_3389_all', (array)($unsafe['flagged_rule_ids'] ?? []))) $uScore += 15;
+        if (! empty($unsafe['rule_permissive_telnet']) || in_array('rule_23_all', (array)($unsafe['flagged_rule_ids'] ?? []))) $uScore += 10;
+        $scores['unsafe_rule_identification'] = $uScore;
+
+        // 3. Corrected Policy (30 pts)
+        $policy = $data['corrected_policy'] ?? [];
+        $pScore = 0;
+        if (! empty($policy['rdp_restricted_to_vpn'])) $pScore += 15;
+        if (! empty($policy['inbound_default_drop'])) $pScore += 15;
+        $scores['corrected_policy'] = $pScore;
+
+        // 4. Policy Testing (10 pts)
+        $tests = $data['policy_tests'] ?? [];
+        $scores['policy_testing'] = count($tests) >= 2 ? 10 : 5;
+
+        // 5. Change Record (10 pts)
+        $change = $data['change_record'] ?? '';
+        $scores['change_record'] = strlen(trim($change)) >= 15 ? 10 : 5;
 
         $total = array_sum($scores);
         return [
