@@ -20,28 +20,75 @@ class SimulationController extends Controller
     /**
      * Display the Simulation Lab Arena.
      */
-    public function show(Laboratory $laboratory): Response|RedirectResponse
+    public function show(Laboratory $laboratory, \App\Services\Simulation\AttemptWorkflowService $workflowService): Response|RedirectResponse
     {
         $user = Auth::user();
 
-        // Find or create in-progress attempt for trainee
-        $attempt = Attempt::firstOrCreate(
-            [
-                'user_id' => $user->id,
-                'laboratory_id' => $laboratory->id,
-                'status' => AttemptStatus::IN_PROGRESS,
-            ],
-            [
-                'started_at' => now(),
-            ]
-        );
+        // Enforce Prerequisite Gating (Lab 1 must be passed with >= 80% before accessing subsequent labs)
+        if (! $workflowService->checkPrerequisites($user, $laboratory)) {
+            return redirect()->route('courses.index')->with(
+                'error',
+                'Prerequisite Requirement: You must complete and pass Laboratory 1 (Cybersecurity Laboratory Orientation and Rules) with at least 80% before accessing this laboratory.'
+            );
+        }
 
+        $attempt = $workflowService->getOrCreateAttempt($user, $laboratory);
         $laboratory->load(['questions', 'scenario']);
 
         return Inertia::render('Simulation/Arena', [
             'laboratory' => $laboratory,
             'attempt' => $attempt->load(['commands', 'answers']),
         ]);
+    }
+
+    /**
+     * Autosave trainee progress without final submission.
+     */
+    public function autosave(Request $request, Attempt $attempt, \App\Services\Simulation\AttemptWorkflowService $workflowService): JsonResponse
+    {
+        $this->authorizeAccess($attempt);
+
+        $request->validate([
+            'state' => 'required|array',
+        ]);
+
+        $updated = $workflowService->autosave($attempt, $request->input('state'));
+
+        return response()->json([
+            'success' => true,
+            'saved_at' => now()->toIso8601String(),
+        ]);
+    }
+
+    /**
+     * Digitally acknowledge safety rules of engagement.
+     */
+    public function acknowledgeSafety(Request $request, Attempt $attempt, \App\Services\Simulation\AttemptWorkflowService $workflowService): JsonResponse
+    {
+        $this->authorizeAccess($attempt);
+
+        $version = $request->input('version', '1.0.0');
+        $updated = $workflowService->acknowledgeSafety($attempt, $version);
+
+        return response()->json([
+            'success' => true,
+            'acknowledged_at' => $updated->safety_acknowledged_at->toIso8601String(),
+        ]);
+    }
+
+    /**
+     * Reset attempt state safely.
+     */
+    public function reset(Attempt $attempt, \App\Services\Simulation\AttemptWorkflowService $workflowService): RedirectResponse
+    {
+        $this->authorizeAccess($attempt);
+
+        $workflowService->resetAttempt($attempt);
+
+        return redirect()->route('simulation.show', $attempt->laboratory->slug)->with(
+            'success',
+            'Virtual scenario environment has been safely reset to starting state.'
+        );
     }
 
     /**
@@ -63,15 +110,23 @@ class SimulationController extends Controller
     /**
      * Submit lab attempt answers for automatic scoring.
      */
-    public function submitAttempt(Request $request, Attempt $attempt, ScoringEngineService $scoringService): RedirectResponse
-    {
+    public function submitAttempt(
+        Request $request,
+        Attempt $attempt,
+        ScoringEngineService $scoringService,
+        \App\Services\Simulation\AttemptWorkflowService $workflowService
+    ): RedirectResponse {
         $this->authorizeAccess($attempt);
 
-        $request->validate([
-            'answers' => 'required|array',
-        ]);
-
-        $scoringService->evaluateAttempt($attempt, $request->input('answers'));
+        // Check if submission is rubric-based (e.g. Lab 1) or question-based
+        if ($request->has('rubric_submission')) {
+            $workflowService->submitAttempt($attempt, $request->all());
+        } else {
+            $request->validate([
+                'answers' => 'required|array',
+            ]);
+            $scoringService->evaluateAttempt($attempt, $request->input('answers'));
+        }
 
         return redirect()->route('simulation.result', $attempt);
     }

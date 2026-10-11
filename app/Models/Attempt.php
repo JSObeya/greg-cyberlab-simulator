@@ -20,6 +20,12 @@ class Attempt extends Model
         'submitted_at',
         'raw_score',
         'penalties',
+        'readiness_answers',
+        'evidence_data',
+        'autosaved_state',
+        'rubric_scores',
+        'safety_acknowledged_at',
+        'policy_version',
         'final_score',
         'is_passed',
         'instructor_notes',
@@ -32,7 +38,12 @@ class Attempt extends Model
             'status' => AttemptStatus::class,
             'started_at' => 'datetime',
             'submitted_at' => 'datetime',
+            'safety_acknowledged_at' => 'datetime',
             'is_passed' => 'boolean',
+            'readiness_answers' => 'array',
+            'evidence_data' => 'array',
+            'autosaved_state' => 'array',
+            'rubric_scores' => 'array',
         ];
     }
 

@@ -16,6 +16,7 @@ import {
     Lock
 } from 'lucide-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import OrientationAndSafetyConsole from './Workbenches/OrientationAndSafetyConsole';
 
 interface ArenaProps {
     laboratory: any;
@@ -23,7 +24,10 @@ interface ArenaProps {
 }
 
 export default function Arena({ laboratory, attempt }: ArenaProps) {
-    const [activeTab, setActiveTab] = useState<'briefing' | 'terminal' | 'workbench' | 'assessment'>('briefing');
+    const isOrientationConsole = laboratory.primary_workspace === 'orientation_console' || laboratory.id === 1;
+    const [activeTab, setActiveTab] = useState<'briefing' | 'terminal' | 'workbench' | 'assessment'>(
+        isOrientationConsole ? 'workbench' : 'briefing'
+    );
 
     // Terminal State
     const [commandInput, setCommandInput] = useState('');
@@ -82,8 +86,36 @@ export default function Arena({ laboratory, attempt }: ArenaProps) {
         post(route('simulation.submit', attempt.id));
     };
 
+    const handleResetAttempt = () => {
+        if (confirm('Are you sure you want to reset your virtual scenario to starting state? Historical records will be retained.')) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = route('simulation.reset', attempt.id);
+            const csrfToken = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content;
+            if (csrfToken) {
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = '_token';
+                csrfInput.value = csrfToken;
+                form.appendChild(csrfInput);
+            }
+            document.body.appendChild(form);
+            form.submit();
+        }
+    };
+
     const renderWorkbench = () => {
         const config = laboratory.workbench_config || {};
+
+        if (laboratory.primary_workspace === 'orientation_console' || laboratory.slug === 'lab-01-orientation-rules' || laboratory.id === 1) {
+            return (
+                <OrientationAndSafetyConsole
+                    laboratory={laboratory}
+                    attempt={attempt}
+                    onReset={handleResetAttempt}
+                />
+            );
+        }
 
         if (laboratory.category === 'phishing') {
             const emails = config.emails || [];

@@ -75,27 +75,62 @@ export default function Result({ attempt }: ResultProps) {
                         </p>
                     </div>
 
-                    {/* Question Breakdown */}
-                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                        <h4 className="text-base font-bold text-slate-900 dark:text-white mb-4">Question Breakdown & Feedback</h4>
-                        <div className="space-y-4">
-                            {attempt.answers?.map((ans: any, idx: number) => (
-                                <div key={ans.id} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 text-xs space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <span className="font-bold text-slate-900 dark:text-white">Question #{idx + 1}</span>
-                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                            ans.is_correct
-                                                ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
-                                                : 'bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-300'
-                                        }`}>
-                                            {ans.is_correct ? 'Correct (+20 pts)' : 'Incorrect (0 pts)'}
+                    {/* Curriculum 100-Point Rubric Breakdown */}
+                    {attempt.rubric_scores && (
+                        <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                            <h4 className="text-base font-bold text-slate-900 dark:text-white mb-4">
+                                100-Point Rubric Evaluation Breakdown
+                            </h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {Object.entries(attempt.rubric_scores).map(([criterion, marks]: [string, any]) => (
+                                    <div
+                                        key={criterion}
+                                        className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 flex items-center justify-between"
+                                    >
+                                        <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 capitalize">
+                                            {criterion.replace(/_/g, ' ')}
+                                        </span>
+                                        <span className="px-2.5 py-1 rounded-lg bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-mono font-bold text-xs">
+                                            {marks} pts
                                         </span>
                                     </div>
-                                    <p className="text-slate-600 dark:text-slate-400">{ans.feedback}</p>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    )}
+
+                    {lab.debrief_content && (
+                        <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                            <h4 className="text-base font-bold text-slate-900 dark:text-white mb-2">Authoritative Curriculum Debrief</h4>
+                            <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line bg-blue-50/40 dark:bg-blue-950/20 p-4 rounded-xl border border-blue-200 dark:border-blue-900/40">
+                                {lab.debrief_content}
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Question Breakdown */}
+                    {attempt.answers && attempt.answers.length > 0 && (
+                        <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                            <h4 className="text-base font-bold text-slate-900 dark:text-white mb-4">Question Breakdown & Feedback</h4>
+                            <div className="space-y-4">
+                                {attempt.answers?.map((ans: any, idx: number) => (
+                                    <div key={ans.id} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 text-xs space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-bold text-slate-900 dark:text-white">Question #{idx + 1}</span>
+                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                                ans.is_correct
+                                                    ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
+                                                    : 'bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-300'
+                                            }`}>
+                                                {ans.is_correct ? 'Correct (+20 pts)' : 'Incorrect (0 pts)'}
+                                            </span>
+                                        </div>
+                                        <p className="text-slate-600 dark:text-slate-400">{ans.feedback}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     <div className="pt-6 flex justify-between items-center">
                         <Link

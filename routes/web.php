@@ -43,6 +43,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/attempts/{attempt}/command', [SimulationController::class, 'executeCommand'])
         ->middleware('throttle:60,1')
         ->name('simulation.command');
+    Route::post('/attempts/{attempt}/autosave', [SimulationController::class, 'autosave'])->name('simulation.autosave');
+    Route::post('/attempts/{attempt}/acknowledge-safety', [SimulationController::class, 'acknowledgeSafety'])->name('simulation.acknowledge-safety');
+    Route::post('/attempts/{attempt}/reset', [SimulationController::class, 'reset'])->name('simulation.reset');
     Route::post('/attempts/{attempt}/submit', [SimulationController::class, 'submitAttempt'])->name('simulation.submit');
     Route::get('/attempts/{attempt}/result', [SimulationController::class, 'result'])->name('simulation.result');
 
