@@ -32,6 +32,7 @@ To preserve Laravel's security boundary:
 
 ## 3. Production Environment (.env)
 ssh -p 65002 u842010817@46.202.172.40
+cd /home/u842010817/domains/gregicthub.com/public_html/cyberlab
 
 Create `.env` based on `.env.example`:
 ```env

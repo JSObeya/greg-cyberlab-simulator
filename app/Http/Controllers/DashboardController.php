@@ -20,7 +20,7 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->isAdmin()) {
+        if ($user->isAdmin() || $user->isAcademicCoordinator()) {
             return Inertia::render('Admin/Dashboard', [
                 'stats' => [
                     'totalUsers' => User::count(),
@@ -38,7 +38,7 @@ class DashboardController extends Controller
             ]);
         }
 
-        if ($user->isInstructor()) {
+        if ($user->isInstructor() || $user->isTeachingAssistant()) {
             return Inertia::render('Instructor/Dashboard', [
                 'stats' => [
                     'activeLabs' => Laboratory::where('status', 'published')->count(),
