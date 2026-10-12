@@ -14,9 +14,9 @@ export default function Authenticated({
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
     const [darkMode, setDarkMode] = useState(() => {
         if (typeof window !== 'undefined') {
-            return localStorage.getItem('theme') === 'dark';
+            return localStorage.getItem('theme') !== 'light';
         }
-        return false;
+        return true;
     });
 
     useEffect(() => {

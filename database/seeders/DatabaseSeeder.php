@@ -116,7 +116,11 @@ class DatabaseSeeder extends Seeder
         foreach ($labsData as $index => $item) {
             $lesson = Lesson::updateOrCreate(
                 ['module_id' => $item['module_id'] == 1 ? $mod1->id : ($item['module_id'] == 2 ? $mod2->id : ($item['module_id'] == 3 ? $mod3->id : $mod4->id)), 'slug' => 'lesson-' . ($index + 1)],
-                ['title' => 'Lesson ' . ($index + 1) . ': ' . $item['title'], 'order' => $index + 1]
+                [
+                    'title' => 'Lesson ' . ($index + 1) . ': ' . $item['title'],
+                    'order' => $index + 1,
+                    'content' => $item['theory_notes'] ?? null,
+                ]
             );
 
             $lab = Laboratory::updateOrCreate(
