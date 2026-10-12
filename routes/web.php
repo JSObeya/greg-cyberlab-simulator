@@ -60,6 +60,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/assignment-submissions/{submission}/grade', [\App\Http\Controllers\AssignmentController::class, 'grade'])->name('assignments.grade');
     Route::get('/assignment-submissions/{submission}/download', [\App\Http\Controllers\AssignmentController::class, 'download'])->name('assignments.download');
 
+    // Attendance, Gradebook & Academic Moderation (Phase 6 & 7)
+    Route::post('/cohorts/{cohort}/attendance', [\App\Http\Controllers\GradebookController::class, 'recordAttendance'])->name('cohorts.attendance.record');
+    Route::post('/courses/{course}/grades/{trainee}/calculate', [\App\Http\Controllers\GradebookController::class, 'calculateGrade'])->name('grades.calculate');
+    Route::post('/grades/{grade}/moderate', [\App\Http\Controllers\GradebookController::class, 'moderateGrade'])->name('grades.moderate');
+
     // Academic Programmes Management
     Route::get('/admin/programmes', [\App\Http\Controllers\ProgrammeController::class, 'index'])->name('admin.programmes.index');
     Route::post('/admin/programmes', [\App\Http\Controllers\ProgrammeController::class, 'store'])->name('admin.programmes.store');

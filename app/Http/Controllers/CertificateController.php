@@ -17,7 +17,7 @@ class CertificateController extends Controller
      */
     public function verify(string $token): Response
     {
-        $certificate = Certificate::with(['user', 'course'])
+        $certificate = Certificate::with(['user', 'course', 'programme', 'cohort'])
             ->where('verification_token', $token)
             ->firstOrFail();
 
@@ -26,7 +26,12 @@ class CertificateController extends Controller
                 'certificate_number' => $certificate->certificate_number,
                 'recipient_name' => $certificate->user->name,
                 'course_title' => $certificate->course->title,
+                'programme_title' => $certificate->programme?->title ?? 'Greg & Co. ICT Academy Cyber Training',
+                'cohort_name' => $certificate->cohort?->name ?? 'Direct Enrolment',
+                'score' => $certificate->score,
+                'letter_grade' => $certificate->letter_grade,
                 'issued_date' => $certificate->issued_date->format('F d, Y'),
+                'verification_token' => $certificate->verification_token,
                 'is_valid' => true,
             ],
         ]);
