@@ -32,9 +32,13 @@ class CourseController extends Controller
     public function show(Course $course): Response
     {
         $course->load([
+            'programme',
+            'instructors',
             'modules.lessons.laboratories' => function ($query) {
                 $query->where('status', 'published');
             },
+            'modules.lessons.resources',
+            'modules.lessons.activities',
             'cohorts',
         ]);
 
@@ -48,7 +52,12 @@ class CourseController extends Controller
      */
     public function lesson(Lesson $lesson): Response
     {
-        $lesson->load(['module.course', 'laboratories']);
+        $lesson->load([
+            'module.course.programme',
+            'laboratories',
+            'resources.uploader',
+            'activities',
+        ]);
 
         return Inertia::render('Courses/Lesson', [
             'lesson' => $lesson,

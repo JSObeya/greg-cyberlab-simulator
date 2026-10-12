@@ -266,6 +266,62 @@ export default function LessonView({ lesson, module, course }: LessonProps) {
                                 </div>
                             </div>
                         )}
+
+                        {/* 4. Downloadable Learning Resources */}
+                        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 sm:p-7 shadow-xs space-y-4">
+                            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                                <div className="flex items-center gap-2.5">
+                                    <FileText className="w-5 h-5 text-emerald-500" />
+                                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                                        Learning Resources & Worksheets
+                                    </h3>
+                                </div>
+                                <span className="text-xs text-slate-400 font-medium">
+                                    {lesson.resources?.length || 0} Files
+                                </span>
+                            </div>
+
+                            {lesson.resources && lesson.resources.length > 0 ? (
+                                <div className="space-y-3">
+                                    {lesson.resources.map((res: any) => (
+                                        <div
+                                            key={res.id}
+                                            className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 flex items-center justify-between"
+                                        >
+                                            <div className="space-y-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-mono text-[10px] uppercase font-black px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400">
+                                                        {res.file_type}
+                                                    </span>
+                                                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
+                                                        {res.title}
+                                                    </h4>
+                                                </div>
+                                                {res.description && (
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                        {res.description}
+                                                    </p>
+                                                )}
+                                                <span className="text-[10px] text-slate-400">
+                                                    Downloads: {res.download_count}
+                                                </span>
+                                            </div>
+
+                                            <a
+                                                href={route('resources.download', res.id)}
+                                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold shadow-xs transition shrink-0 ml-4"
+                                            >
+                                                Download
+                                            </a>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
+                                    No external resource files attached. Trainees rely primarily on the curriculum doctrine and interactive laboratory exercises above.
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Sidebar Column (1 Col) */}

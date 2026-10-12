@@ -33,6 +33,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/courses/{course:slug}', [CourseController::class, 'show'])->name('courses.show');
     Route::get('/lessons/{lesson:slug}', [CourseController::class, 'lesson'])->name('lessons.show');
 
+    // Course Publication Approval Workflow
+    Route::post('/courses/{course}/submit-review', [\App\Http\Controllers\CourseWorkflowController::class, 'submitForReview'])->name('courses.submit-review');
+    Route::post('/courses/{course}/approve-publish', [\App\Http\Controllers\CourseWorkflowController::class, 'approveAndPublish'])->name('courses.approve-publish');
+    Route::post('/courses/{course}/request-changes', [\App\Http\Controllers\CourseWorkflowController::class, 'requestChanges'])->name('courses.request-changes');
+
+    // Learning Resources Upload & Protected Streaming
+    Route::post('/lessons/{lesson}/resources', [\App\Http\Controllers\LearningResourceController::class, 'store'])->name('resources.store');
+    Route::get('/resources/{resource}/download', [\App\Http\Controllers\LearningResourceController::class, 'download'])->name('resources.download');
+
     // Academic Programmes Management
     Route::get('/admin/programmes', [\App\Http\Controllers\ProgrammeController::class, 'index'])->name('admin.programmes.index');
     Route::post('/admin/programmes', [\App\Http\Controllers\ProgrammeController::class, 'store'])->name('admin.programmes.store');
