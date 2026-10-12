@@ -42,6 +42,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/lessons/{lesson}/resources', [\App\Http\Controllers\LearningResourceController::class, 'store'])->name('resources.store');
     Route::get('/resources/{resource}/download', [\App\Http\Controllers\LearningResourceController::class, 'download'])->name('resources.download');
 
+    // Trainee Progress Tracking (Phase 4)
+    Route::post('/lessons/{lesson}/progress', [\App\Http\Controllers\ProgressController::class, 'updateLessonProgress'])->name('lessons.progress');
+
+    // Community, Announcements & Discussions (Phase 4)
+    Route::post('/courses/{course}/announcements', [\App\Http\Controllers\CommunityController::class, 'storeAnnouncement'])->name('courses.announcements.store');
+    Route::post('/courses/{course}/discussions', [\App\Http\Controllers\CommunityController::class, 'storeDiscussion'])->name('courses.discussions.store');
+    Route::post('/discussions/{discussion}/reply', [\App\Http\Controllers\CommunityController::class, 'storeDiscussionPost'])->name('discussions.reply');
+
+    // Assessment Engine: Quizzes (Phase 5)
+    Route::post('/quizzes/{quiz}/attempt', [\App\Http\Controllers\QuizController::class, 'startAttempt'])->name('quizzes.attempt');
+    Route::post('/quiz-attempts/{attempt}/autosave', [\App\Http\Controllers\QuizController::class, 'autosave'])->name('quizzes.autosave');
+    Route::post('/quiz-attempts/{attempt}/submit', [\App\Http\Controllers\QuizController::class, 'submitAttempt'])->name('quizzes.submit');
+
+    // Assessment Engine: Assignments (Phase 5)
+    Route::post('/assignments/{assignment}/submit', [\App\Http\Controllers\AssignmentController::class, 'submit'])->name('assignments.submit');
+    Route::post('/assignment-submissions/{submission}/grade', [\App\Http\Controllers\AssignmentController::class, 'grade'])->name('assignments.grade');
+    Route::get('/assignment-submissions/{submission}/download', [\App\Http\Controllers\AssignmentController::class, 'download'])->name('assignments.download');
+
     // Academic Programmes Management
     Route::get('/admin/programmes', [\App\Http\Controllers\ProgrammeController::class, 'index'])->name('admin.programmes.index');
     Route::post('/admin/programmes', [\App\Http\Controllers\ProgrammeController::class, 'store'])->name('admin.programmes.store');
