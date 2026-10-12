@@ -54,6 +54,28 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        $coordinator1 = User::updateOrCreate(
+            ['email' => 'coordinator@gregcyberlab.test'],
+            [
+                'name' => 'Dr. Victoria Akpera',
+                'password' => Hash::make('Coordinator2026!'),
+                'role' => UserRole::ACADEMIC_COORDINATOR,
+                'phone' => '+234 803 555 6677',
+                'is_active' => true,
+            ]
+        );
+
+        $ta1 = User::updateOrCreate(
+            ['email' => 'ta@gregcyberlab.test'],
+            [
+                'name' => 'Barnabas Tersoo',
+                'password' => Hash::make('Assistant2026!'),
+                'role' => UserRole::TEACHING_ASSISTANT,
+                'phone' => '+234 807 888 9900',
+                'is_active' => true,
+            ]
+        );
+
         // 2. Badges
         Badge::updateOrCreate(
             ['slug' => 'first-lab-completed'],
@@ -68,29 +90,83 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Certified Cyber Defender', 'description' => 'Mastered all 15 curriculum cybersecurity laboratory simulations.', 'icon' => 'medal']
         );
 
-        // 3. Course, Cohort & Enrollment
+        // 3. Academic Session & Programmes
+        $session = \App\Models\AcademicSession::updateOrCreate(
+            ['code' => 'AY-2026-27'],
+            [
+                'name' => '2026/2027 Academic Year (Cohort Alpha & Beta)',
+                'start_date' => now()->startOfYear(),
+                'end_date' => now()->endOfYear(),
+                'is_current' => true,
+                'description' => 'Official academic calendar for cybersecurity cohort admissions at Makurdi campus.',
+            ]
+        );
+
+        $programme = \App\Models\Programme::updateOrCreate(
+            ['code' => 'DCD-2026'],
+            [
+                'title' => 'Diploma in Cyber Defense & SOC Operations',
+                'slug' => 'diploma-cyber-defense-soc-operations',
+                'department' => 'Cybersecurity Operations & Threat Defense',
+                'duration' => '3 Months (Intensive)',
+                'delivery_mode' => 'hybrid',
+                'coordinator_id' => $coordinator1->id,
+                'entry_requirements' => 'Computing fundamentals, basic networking concepts, and ethical commitment.',
+                'objectives' => 'Equip trainees with end-to-end capabilities across incident triage, log inspection, terminal defense, and threat analysis.',
+                'description' => 'The premier hands-on professional certificate track by Greg & Co. ICT Academy in Makurdi, Benue State.',
+                'status' => 'active',
+                'is_active' => true,
+            ]
+        );
+
+        // 4. Course, Cohort & Enrollment
         $course = Course::updateOrCreate(
             ['slug' => 'cybersecurity-fundamentals-soc-triage'],
             [
+                'programme_id' => $programme->id,
                 'title' => 'Cybersecurity Fundamentals & SOC Triage Practical Operations',
+                'code' => 'CYB-101',
+                'summary' => 'Comprehensive foundational and intermediate cybersecurity operations training syllabus.',
                 'description' => 'Hands-on practical training covering safe cybersecurity hygiene, terminal investigation, packet forensics, log auditing, email triage, and incident response.',
                 'level' => 'beginner_to_intermediate',
+                'credit_hours' => 4,
+                'estimated_duration_hours' => 60,
+                'passing_score' => 70,
+                'status' => 'published',
+                'created_by' => $instructor1->id,
+                'approved_by' => $coordinator1->id,
+                'published_at' => now(),
                 'is_published' => true,
             ]
         );
+
+        $course->instructors()->syncWithoutDetaching([
+            $instructor1->id => ['is_primary' => true, 'assigned_at' => now()],
+            $ta1->id => ['is_primary' => false, 'assigned_at' => now()],
+        ]);
 
         $cohort = Cohort::updateOrCreate(
             ['code' => 'MAK-2026-ALPHA'],
             [
                 'course_id' => $course->id,
+                'programme_id' => $programme->id,
+                'academic_session_id' => $session->id,
                 'name' => 'Makurdi Cyber Cadets - Cohort Alpha 2026',
                 'start_date' => now()->startOfMonth(),
                 'end_date' => now()->addMonths(3)->endOfMonth(),
+                'max_capacity' => 30,
+                'status' => 'active',
                 'is_active' => true,
             ]
         );
 
-        $cohort->users()->syncWithoutDetaching([$trainee1->id]);
+        $cohort->instructors()->syncWithoutDetaching([
+            $instructor1->id => ['is_primary' => true, 'assigned_at' => now()],
+        ]);
+
+        $cohort->users()->syncWithoutDetaching([
+            $trainee1->id => ['enrolled_at' => now(), 'status' => 'active'],
+        ]);
 
         // 4. Learning Modules
         $mod1 = Module::updateOrCreate(

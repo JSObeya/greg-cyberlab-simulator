@@ -33,6 +33,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/courses/{course:slug}', [CourseController::class, 'show'])->name('courses.show');
     Route::get('/lessons/{lesson:slug}', [CourseController::class, 'lesson'])->name('lessons.show');
 
+    // Academic Programmes Management
+    Route::get('/admin/programmes', [\App\Http\Controllers\ProgrammeController::class, 'index'])->name('admin.programmes.index');
+    Route::post('/admin/programmes', [\App\Http\Controllers\ProgrammeController::class, 'store'])->name('admin.programmes.store');
+    Route::put('/admin/programmes/{programme}', [\App\Http\Controllers\ProgrammeController::class, 'update'])->name('admin.programmes.update');
+
     // Cohort & Enrollment Management
     Route::get('/cohorts', [CohortController::class, 'index'])->name('cohorts.index');
     Route::post('/cohorts', [CohortController::class, 'store'])->name('cohorts.store');

@@ -49,9 +49,19 @@ class User extends Authenticatable
         return $this->role === UserRole::ADMIN || $this->role === UserRole::SUPER_ADMIN;
     }
 
+    public function isAcademicCoordinator(): bool
+    {
+        return $this->role === UserRole::ACADEMIC_COORDINATOR;
+    }
+
     public function isInstructor(): bool
     {
         return $this->role === UserRole::INSTRUCTOR;
+    }
+
+    public function isTeachingAssistant(): bool
+    {
+        return $this->role === UserRole::TEACHING_ASSISTANT;
     }
 
     public function isTrainee(): bool

@@ -74,7 +74,17 @@ export default function Authenticated({
                                     Curriculum
                                 </NavLink>
 
-                                {(user.role === 'admin' || user.role === 'super_admin' || user.role === 'instructor') && (
+                                {(user.role === 'admin' || user.role === 'super_admin' || user.role === 'academic_coordinator') && (
+                                    <NavLink
+                                        href={route('admin.programmes.index')}
+                                        active={route().current('admin.programmes.*')}
+                                        className="text-xs font-bold dark:text-slate-200"
+                                    >
+                                        Programmes
+                                    </NavLink>
+                                )}
+
+                                {(user.role === 'admin' || user.role === 'super_admin' || user.role === 'instructor' || user.role === 'academic_coordinator') && (
                                     <NavLink
                                         href={route('cohorts.index')}
                                         active={route().current('cohorts.*')}
