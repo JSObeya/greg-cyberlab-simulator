@@ -196,8 +196,25 @@ export default function ProgrammesIndex({ programmes, coordinators }: Programmes
                 )}
 
                 {/* Programmes Listing */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {programmes.map((prog) => (
+                {programmes.length === 0 ? (
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 p-12 text-center space-y-4 shadow-xs">
+                        <div className="inline-flex p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400">
+                            <GraduationCap className="w-8 h-8" />
+                        </div>
+                        <h3 className="text-base font-black text-slate-900 dark:text-white">No Academic Programmes Created Yet</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                            The academy database is ready for your academic pathways. Click below to establish your first diploma or professional certification programme, or run the academy database seeder on the server.
+                        </p>
+                        <button
+                            onClick={() => setIsCreating(true)}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-md transition"
+                        >
+                            <Plus className="w-4 h-4" /> Establish First Programme
+                        </button>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {programmes.map((prog) => (
                         <div
                             key={prog.id}
                             className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 sm:p-7 shadow-xs space-y-4 hover:border-blue-400 dark:hover:border-blue-500 transition"
@@ -245,6 +262,7 @@ export default function ProgrammesIndex({ programmes, coordinators }: Programmes
                         </div>
                     ))}
                 </div>
+                )}
             </div>
         </AuthenticatedLayout>
     );
