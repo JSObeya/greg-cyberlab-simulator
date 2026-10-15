@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberChef - The Cyber Swiss Army Knife | Greg Cyberlab Edition</title>
+    <link rel="icon" type="image/png" href="/images/logo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            900: '#0b1120',
+                            800: '#0f172a',
+                            700: '#1e293b',
+                            accent: '#06b6d4',
+                            green: '#10b981'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-mono min-h-screen flex flex-col antialiased select-none">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-slate-900 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="p-1.5 rounded-lg bg-cyan-950 border border-cyan-800 text-cyan-400 font-bold text-xs">
+                🍳 CYBERCHEF
+            </div>
+            <div>
+                <h1 class="text-xs font-bold tracking-wider text-slate-100 uppercase">Greg Cyberlab — Cyber Operations Swiss Army Knife</h1>
+                <p class="text-[10px] text-slate-400">Client-Side Decoder, Parser, Hasher & Triage Suite</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-950 border border-emerald-800 text-emerald-400 font-bold">100% Client-Side Sandboxed</span>
+            <button onclick="clearAll()" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition">Clear All</button>
+            <button onclick="bake()" class="text-xs px-3 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition flex items-center gap-1 shadow-md shadow-cyan-950">
+                <span>▶ BAKE</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main 3-Column Studio -->
+    <div class="flex-1 grid grid-cols-1 md:grid-cols-12 overflow-hidden">
+        
+        <!-- Operations Column (Left) -->
+        <div class="md:col-span-3 bg-slate-900/60 border-r border-slate-800 flex flex-col">
+            <div class="p-3 border-b border-slate-800">
+                <input 
+                    type="text" 
+                    id="opSearch" 
+                    oninput="filterOperations()" 
+                    placeholder="Search operations (e.g., base64, hash, defang)..." 
+                    class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                />
+            </div>
+            <div class="p-2 border-b border-slate-800 flex flex-wrap gap-1 text-[10px]">
+                <button onclick="filterCategory('all')" class="cat-btn px-2 py-0.5 rounded bg-cyan-600 text-white font-bold">All</button>
+                <button onclick="filterCategory('Data Format')" class="cat-btn px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium">Encoding</button>
+                <button onclick="filterCategory('Hashing')" class="cat-btn px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium">Hashing</button>
+                <button onclick="filterCategory('Network / Triage')" class="cat-btn px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium">Network</button>
+                <button onclick="filterCategory('Ciphers')" class="cat-btn px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium">Ciphers</button>
+            </div>
+            <div id="operationsList" class="flex-1 overflow-y-auto p-2 space-y-1 text-xs">
+                <!-- Dynamically populated -->
+            </div>
+        </div>
+
+        <!-- Recipe Pipeline Column (Middle) -->
+        <div class="md:col-span-3 bg-slate-950/70 border-r border-slate-800 flex flex-col">
+            <div class="p-3 border-b border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-slate-300 uppercase tracking-wider">Recipe Pipeline</span>
+                    <span id="recipeCount" class="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">0 ops</span>
+                </div>
+                <button onclick="clearRecipe()" class="text-[10px] text-red-400 hover:text-red-300">Clear Recipe</button>
+            </div>
+            <div id="recipeBox" class="flex-1 overflow-y-auto p-3 space-y-2 text-xs">
+                <div id="emptyRecipePlaceholder" class="text-center py-12 text-slate-600 text-xs">
+                    <p>No operations in recipe</p>
+                    <p class="text-[10px] mt-1 text-slate-500">Double click or click '+' on any operation from the left panel to add it here.</p>
+                </div>
+            </div>
+            <!-- Auto-bake toggle -->
+            <div class="p-3 border-t border-slate-800 bg-slate-900/40 flex items-center justify-between text-xs">
+                <label class="flex items-center gap-2 text-slate-400 cursor-pointer">
+                    <input type="checkbox" id="autoBake" checked onchange="toggleAutoBake()" class="rounded bg-slate-800 border-slate-700 text-cyan-600">
+                    <span>Auto Bake on Change</span>
+                </label>
+                <span id="bakeStatus" class="text-[10px] text-emerald-400 font-bold">READY</span>
+            </div>
+        </div>
+
+        <!-- Input & Output Columns (Right) -->
+        <div class="md:col-span-6 flex flex-col">
+            <!-- Input Half -->
+            <div class="flex-1 flex flex-col border-b border-slate-800">
+                <div class="px-3 py-2 bg-slate-900/60 border-b border-slate-800 flex items-center justify-between text-xs">
+                    <span class="font-bold text-slate-300 uppercase tracking-wider">Input</span>
+                    <div class="flex items-center gap-2">
+                        <span id="inputLen" class="text-[10px] text-slate-500">0 bytes</span>
+                        <button onclick="loadSample('base64')" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">Sample: B64</button>
+                        <button onclick="loadSample('defang')" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">Sample: URL</button>
+                        <button onclick="document.getElementById('inputArea').value=''; updateInputLen(); maybeAutoBake();" class="text-[10px] text-slate-400 hover:text-white">Clear</button>
+                    </div>
+                </div>
+                <textarea 
+                    id="inputArea" 
+                    oninput="updateInputLen(); maybeAutoBake();" 
+                    placeholder="Enter or paste raw input here..." 
+                    class="flex-1 w-full bg-slate-950 p-3 text-xs text-slate-200 placeholder-slate-600 focus:outline-none resize-none font-mono"
+                ></textarea>
+            </div>
+
+            <!-- Output Half -->
+            <div class="flex-1 flex flex-col">
+                <div class="px-3 py-2 bg-slate-900/60 border-b border-slate-800 flex items-center justify-between text-xs">
+                    <span class="font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <span class="inline-block w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                        Output
+                    </span>
+                    <div class="flex items-center gap-2">
+                        <span id="outputLen" class="text-[10px] text-slate-500">0 bytes</span>
+                        <button onclick="copyOutput()" id="copyBtn" class="text-[10px] px-2 py-0.5 rounded bg-cyan-900/60 border border-cyan-700 text-cyan-300 hover:bg-cyan-800 transition">Copy Output</button>
+                    </div>
+                </div>
+                <textarea 
+                    id="outputArea" 
+                    readonly 
+                    placeholder="Baked output will appear here..." 
+                    class="flex-1 w-full bg-slate-950/90 p-3 text-xs text-emerald-300 placeholder-slate-700 focus:outline-none resize-none font-mono"
+                ></textarea>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Minimal pure JavaScript cryptographic & transform implementations -->
+    <script>
+        // Available Operations Registry
+        const OPERATIONS = [
+            { id: 'to_base64', name: 'To Base64', cat: 'Data Format', desc: 'Encodes raw string into RFC 4648 Base64 format.', run: (str) => btoa(unescape(encodeURIComponent(str))) },
+            { id: 'from_base64', name: 'From Base64', cat: 'Data Format', desc: 'Decodes Base64 encoded string back to plain text.', run: (str) => decodeURIComponent(escape(atob(str.trim().replace(/\s/g, '')))) },
+            { id: 'to_hex', name: 'To Hex', cat: 'Data Format', desc: 'Converts ASCII string to hexadecimal bytes.', run: (str) => Array.from(new TextEncoder().encode(str)).map(b => b.toString(16).padStart(2, '0')).join(' ') },
+            { id: 'from_hex', name: 'From Hex', cat: 'Data Format', desc: 'Decodes hexadecimal bytes to ASCII string.', run: (str) => {
+                const clean = str.replace(/[^0-9a-fA-F]/g, '');
+                let res = '';
+                for (let i = 0; i < clean.length; i += 2) {
+                    res += String.fromCharCode(parseInt(clean.substr(i, 2), 16));
+                }
+                return res;
+            }},
+            { id: 'url_encode', name: 'URL Encode', cat: 'Data Format', desc: 'Encodes unsafe URI characters with percent-encoding.', run: (str) => encodeURIComponent(str) },
+            { id: 'url_decode', name: 'URL Decode', cat: 'Data Format', desc: 'Decodes percent-encoded URI strings.', run: (str) => decodeURIComponent(str) },
+            { id: 'rot13', name: 'ROT13', cat: 'Ciphers', desc: 'Rotate alphabet characters by 13 positions.', run: (str) => str.replace(/[a-zA-Z]/g, c => {
+                const base = c <= 'Z' ? 65 : 97;
+                return String.fromCharCode(base + (c.charCodeAt(0) - base + 13) % 26);
+            })},
+            { id: 'defang_url', name: 'Defang URL', cat: 'Network / Triage', desc: 'Sanitizes HTTP/HTTPS URLs (hxxp, [.] dot) for safe sharing in SOC reports.', run: (str) => str.replace(/http/gi, 'hxxp').replace(/\./g, '[.]') },
+            { id: 'refang_url', name: 'Refang URL', cat: 'Network / Triage', desc: 'Restores defanged hxxp and [.] back to actionable URLs.', run: (str) => str.replace(/hxxp/gi, 'http').replace(/\[\.\]/g, '.') },
+            { id: 'extract_ip', name: 'Extract IPv4 Addresses', cat: 'Network / Triage', desc: 'Extracts all unique IPv4 addresses found in the payload.', run: (str) => {
+                const matches = str.match(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g);
+                return matches ? Array.from(new Set(matches)).join('\n') : 'No IPv4 addresses found';
+            }},
+            { id: 'extract_urls', name: 'Extract URLs', cat: 'Network / Triage', desc: 'Extracts all HTTP/HTTPS links found in payload.', run: (str) => {
+                const matches = str.match(/https?:\/\/[^\s"'<>]+/g);
+                return matches ? Array.from(new Set(matches)).join('\n') : 'No URLs found';
+            }},
+            { id: 'sha256', name: 'SHA256 Hash', cat: 'Hashing', desc: 'Computes cryptographic SHA-256 digest.', runAsync: async (str) => {
+                const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+                return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+            }},
+            { id: 'sha1', name: 'SHA1 Hash', cat: 'Hashing', desc: 'Computes SHA-1 hash digest.', runAsync: async (str) => {
+                const buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(str));
+                return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+            }},
+            { id: 'to_upper', name: 'To Upper case', cat: 'Data Format', desc: 'Converts all characters to uppercase.', run: (str) => str.toUpperCase() },
+            { id: 'to_lower', name: 'To Lower case', cat: 'Data Format', desc: 'Converts all characters to lowercase.', run: (str) => str.toLowerCase() },
+            { id: 'reverse', name: 'Reverse', cat: 'Data Format', desc: 'Reverses character sequence.', run: (str) => str.split('').reverse().join('') }
+        ];
+
+        let activeRecipe = [];
+        let currentCategory = 'all';
+
+        // Render Operations in left panel
+        function renderOperations() {
+            const list = document.getElementById('operationsList');
+            const query = document.getElementById('opSearch').value.toLowerCase();
+            list.innerHTML = '';
+
+            const filtered = OPERATIONS.filter(op => {
+                const matchCat = currentCategory === 'all' || op.cat === currentCategory;
+                const matchQ = op.name.toLowerCase().includes(query) || op.desc.toLowerCase().includes(query);
+                return matchCat && matchQ;
+            });
+
+            filtered.forEach(op => {
+                const div = document.createElement('div');
+                div.className = 'group p-2 rounded-lg bg-slate-950/60 border border-slate-800 hover:border-cyan-700 hover:bg-slate-800/80 cursor-pointer transition flex items-center justify-between';
+                div.innerHTML = `
+                    <div class="pr-2">
+                        <div class="font-bold text-slate-200 group-hover:text-cyan-400">${op.name}</div>
+                        <div class="text-[10px] text-slate-500 line-clamp-1">${op.desc}</div>
+                    </div>
+                    <button class="w-6 h-6 rounded bg-slate-800 group-hover:bg-cyan-600 text-slate-400 group-hover:text-white flex items-center justify-center font-bold text-xs shrink-0">+</button>
+                `;
+                div.onclick = () => addOperation(op);
+                list.appendChild(div);
+            });
+        }
+
+        function filterOperations() {
+            renderOperations();
+        }
+
+        function filterCategory(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                if (btn.innerText.toLowerCase() === cat.toLowerCase() || (cat === 'all' && btn.innerText === 'All')) {
+                    btn.className = 'cat-btn px-2 py-0.5 rounded bg-cyan-600 text-white font-bold';
+                } else {
+                    btn.className = 'cat-btn px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium';
+                }
+            });
+            renderOperations();
+        }
+
+        function addOperation(op) {
+            activeRecipe.push(op);
+            renderRecipe();
+            maybeAutoBake();
+        }
+
+        function removeOperation(index) {
+            activeRecipe.splice(index, 1);
+            renderRecipe();
+            maybeAutoBake();
+        }
+
+        function clearRecipe() {
+            activeRecipe = [];
+            renderRecipe();
+            maybeAutoBake();
+        }
+
+        function renderRecipe() {
+            const container = document.getElementById('recipeBox');
+            const countEl = document.getElementById('recipeCount');
+            countEl.innerText = `${activeRecipe.length} ops`;
+
+            if (activeRecipe.length === 0) {
+                container.innerHTML = `
+                    <div id="emptyRecipePlaceholder" class="text-center py-12 text-slate-600 text-xs">
+                        <p>No operations in recipe</p>
+                        <p class="text-[10px] mt-1 text-slate-500">Double click or click '+' on any operation from the left panel to add it here.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+            activeRecipe.forEach((op, index) => {
+                const item = document.createElement('div');
+                item.className = 'p-2.5 rounded-lg bg-slate-900 border border-cyan-900/60 shadow-xs flex items-center justify-between text-xs';
+                item.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="w-4 h-4 rounded-full bg-cyan-950 border border-cyan-700 text-cyan-400 text-[10px] flex items-center justify-center font-bold">${index + 1}</span>
+                        <span class="font-bold text-slate-200">${op.name}</span>
+                    </div>
+                    <button onclick="removeOperation(${index})" class="text-slate-500 hover:text-red-400 font-bold px-1.5 py-0.5">✕</button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        async function bake() {
+            const input = document.getElementById('inputArea').value;
+            const outputArea = document.getElementById('outputArea');
+            const statusEl = document.getElementById('bakeStatus');
+
+            if (activeRecipe.length === 0) {
+                outputArea.value = input;
+                updateOutputLen();
+                return;
+            }
+
+            statusEl.innerText = 'BAKING...';
+            statusEl.className = 'text-[10px] text-amber-400 font-bold';
+
+            try {
+                let current = input;
+                for (const op of activeRecipe) {
+                    if (op.runAsync) {
+                        current = await op.runAsync(current);
+                    } else if (op.run) {
+                        current = op.run(current);
+                    }
+                }
+                outputArea.value = current;
+                statusEl.innerText = 'BAKED';
+                statusEl.className = 'text-[10px] text-emerald-400 font-bold';
+            } catch (err) {
+                outputArea.value = `[CyberChef Error in operation]: ${err.message}`;
+                statusEl.innerText = 'ERROR';
+                statusEl.className = 'text-[10px] text-red-400 font-bold';
+            }
+
+            updateOutputLen();
+        }
+
+        function maybeAutoBake() {
+            if (document.getElementById('autoBake').checked) {
+                bake();
+            }
+        }
+
+        function toggleAutoBake() {
+            maybeAutoBake();
+        }
+
+        function updateInputLen() {
+            const len = new TextEncoder().encode(document.getElementById('inputArea').value).length;
+            document.getElementById('inputLen').innerText = `${len} bytes`;
+        }
+
+        function updateOutputLen() {
+            const len = new TextEncoder().encode(document.getElementById('outputArea').value).length;
+            document.getElementById('outputLen').innerText = `${len} bytes`;
+        }
+
+        function copyOutput() {
+            const out = document.getElementById('outputArea');
+            out.select();
+            navigator.clipboard.writeText(out.value);
+            const btn = document.getElementById('copyBtn');
+            const old = btn.innerText;
+            btn.innerText = 'Copied!';
+            setTimeout(() => btn.innerText = old, 1500);
+        }
+
+        function clearAll() {
+            document.getElementById('inputArea').value = '';
+            document.getElementById('outputArea').value = '';
+            activeRecipe = [];
+            renderRecipe();
+            updateInputLen();
+            updateOutputLen();
+        }
+
+        function loadSample(type) {
+            if (type === 'base64') {
+                document.getElementById('inputArea').value = 'R1JFRyAmIENPLiBJQ1QgQUNBREVNWSBNQUtVUkRJIC0gQ1lCRVJMQUIgU0lNVUxBVE9S';
+                activeRecipe = [OPERATIONS.find(o => o.id === 'from_base64')];
+            } else if (type === 'defang') {
+                document.getElementById('inputArea').value = 'http://malicious-command-c2.net:8080/payload.exe?agent=192.168.1.55';
+                activeRecipe = [OPERATIONS.find(o => o.id === 'defang_url')];
+            }
+            renderRecipe();
+            updateInputLen();
+            bake();
+        }
+
+        // Initialize on load
+        renderOperations();
+        renderRecipe();
+    </script>
+</body>
+</html>

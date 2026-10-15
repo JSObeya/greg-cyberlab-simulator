@@ -13,9 +13,11 @@ import {
     FileText,
     Network,
     Activity,
-    Lock
+    Lock,
+    Wrench
 } from 'lucide-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import CyberChefDrawer from '@/Components/CyberChefDrawer';
 import OrientationAndSafetyConsole from './Workbenches/OrientationAndSafetyConsole';
 import RiskAssessmentBoard from './Workbenches/RiskAssessmentBoard';
 import IdentitySecurityClinic from './Workbenches/IdentitySecurityClinic';
@@ -42,6 +44,7 @@ export default function Arena({ laboratory, attempt }: ArenaProps) {
     const [activeTab, setActiveTab] = useState<'briefing' | 'terminal' | 'workbench' | 'assessment'>(
         hasInteractiveWorkbench ? 'workbench' : 'briefing'
     );
+    const [isCyberChefOpen, setIsCyberChefOpen] = useState(false);
 
     // Terminal State
     const [commandInput, setCommandInput] = useState('');
@@ -408,6 +411,16 @@ export default function Arena({ laboratory, attempt }: ArenaProps) {
                         <h2 className="text-xl font-bold text-slate-900 dark:text-white">{laboratory.title}</h2>
                     </div>
                     <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setIsCyberChefOpen(true)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-950/80 border border-cyan-700/80 text-cyan-300 hover:bg-cyan-900/80 text-xs font-bold transition shadow-xs"
+                            title="Open CyberChef Decoder & Triage Assistant"
+                        >
+                            <Wrench className="w-3.5 h-3.5" />
+                            <span>CyberChef</span>
+                        </button>
+
                         <Link
                             href={route('dashboard')}
                             className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
@@ -627,6 +640,12 @@ export default function Arena({ laboratory, attempt }: ArenaProps) {
                     </form>
                 )}
             </div>
+
+            {/* Slide-out CyberChef Assistant Drawer */}
+            <CyberChefDrawer
+                isOpen={isCyberChefOpen}
+                onClose={() => setIsCyberChefOpen(false)}
+            />
         </AuthenticatedLayout>
     );
 }

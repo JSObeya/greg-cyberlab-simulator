@@ -114,6 +114,16 @@ export default function Authenticated({
                                     </NavLink>
                                 )}
 
+                                <a
+                                    href="/tools/cyberchef/index.html"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-xs font-bold text-cyan-500 hover:text-cyan-400 dark:text-cyan-400 dark:hover:text-cyan-300 flex items-center gap-1.5 px-3 py-2 transition"
+                                    title="Open CyberChef Studio"
+                                >
+                                    🍳 CyberChef
+                                </a>
+
                                 {(user.role === 'admin' || user.role === 'super_admin' || user.role === 'instructor') && (
                                     <a
                                         href={route('reports.export')}
