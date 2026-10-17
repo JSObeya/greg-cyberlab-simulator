@@ -95,6 +95,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // User & Credential Management (Admins)
     Route::get('/admin/users', [UserController::class, 'index'])->name('admin.users.index');
     Route::post('/admin/users', [UserController::class, 'store'])->name('admin.users.store');
+    Route::post('/admin/users/import-csv', [UserController::class, 'importCsv'])->name('admin.users.import-csv');
+    Route::get('/admin/users/sample-csv', [UserController::class, 'downloadSampleCsv'])->name('admin.users.sample-csv');
     Route::put('/admin/users/{user}', [UserController::class, 'update'])->name('admin.users.update');
     Route::delete('/admin/users/{user}', [UserController::class, 'destroy'])->name('admin.users.destroy');
 
