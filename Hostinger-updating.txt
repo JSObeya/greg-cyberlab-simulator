@@ -1,0 +1,16 @@
+Hostinger-updating for greg-cyberlab-simulator
+
+ssh -p 65002 u842010817@46.202.172.40 (Gregict.com@1)
+
+cd /home/u842010817/domains/gregicthub.com/public_html/cyberlab
+
+cd ~/domains/gregicthub.com/public_html/cyberlab
+
+# 1. Pull the new CyberChef integration
+git pull origin main
+
+# 2. Clear Laravel caches
+php artisan optimize:clear
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache

@@ -12,6 +12,7 @@ import {
     Sliders,
     Network
 } from 'lucide-react';
+import NetworkTopologyCanvas from '@/Components/Simulation/NetworkTopologyCanvas';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
@@ -30,7 +31,7 @@ export default function FirewallPolicySimulator({
 }: FirewallPolicySimulatorProps) {
     const initialState = attempt.autosaved_state || {};
 
-    const [activeTab, setActiveTab] = useState<'rules' | 'unsafe' | 'corrected' | 'testing'>('rules');
+    const [activeTab, setActiveTab] = useState<'topology' | 'rules' | 'unsafe' | 'corrected' | 'testing'>('topology');
 
     // 1. Traffic Evaluation
     const [trafficEvaluation, setTrafficEvaluation] = useState({
@@ -129,6 +130,18 @@ export default function FirewallPolicySimulator({
             <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
                 <div className="flex flex-wrap gap-1.5">
                     <button
+                        onClick={() => setActiveTab('topology')}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                            activeTab === 'topology'
+                                ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/30 font-black'
+                                : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 hover:text-cyan-400'
+                        }`}
+                    >
+                        <Network className="w-3.5 h-3.5 text-cyan-400" />
+                        Interactive Topology & HUD (Visual Lab)
+                    </button>
+
+                    <button
                         onClick={() => setActiveTab('rules')}
                         className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                             activeTab === 'rules'
@@ -191,6 +204,46 @@ export default function FirewallPolicySimulator({
                     </SecondaryButton>
                 </div>
             </div>
+
+            {/* Tab 0: Interactive Topology & HUD */}
+            {activeTab === 'topology' && (
+                <div className="space-y-4">
+                    <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center justify-between text-xs text-slate-300">
+                        <div className="flex items-center gap-3">
+                            <span className="p-2 rounded-xl bg-cyan-950 border border-cyan-800 text-cyan-400 font-bold text-xs uppercase font-mono">
+                                Lab 10 Arena
+                            </span>
+                            <div>
+                                <p className="font-bold text-slate-100 text-sm">Visual Defense Topology & Firewall Policy Remediation</p>
+                                <p className="text-slate-400 text-xs">
+                                    Use the <strong>Virtual Diagnostic HUD</strong> (Wireshark sniffer, Nmap probe, CVE lens) and <strong>Attack Simulator</strong> to audit the network. Click <strong>Action</strong> on Rule #2 to harden the perimeter.
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('rules')}
+                            className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-1.5 shrink-0"
+                        >
+                            View Rules Table <Sliders className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
+
+                    <NetworkTopologyCanvas
+                        laboratory={laboratory}
+                        attempt={attempt}
+                        onRemediateRule={(ruleId, newAction) => {
+                            if (ruleId === 2) {
+                                setUnsafeRules((prev) => ({
+                                    ...prev,
+                                    rule_exposed_rdp: newAction === 'ALLOW',
+                                }));
+                                handleAutosave(true);
+                            }
+                        }}
+                    />
+                </div>
+            )}
 
             {/* Tab 1: Rules Table */}
             {activeTab === 'rules' && (

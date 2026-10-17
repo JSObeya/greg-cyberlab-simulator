@@ -413,6 +413,16 @@ export default function Arena({ laboratory, attempt }: ArenaProps) {
                     <div className="flex items-center gap-2">
                         <button
                             type="button"
+                            onClick={() => setActiveTab('workbench')}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-950/80 border border-blue-700/80 text-blue-300 hover:bg-blue-900/80 text-xs font-bold transition shadow-xs"
+                            title="Open Visual Network Topology Workbench"
+                        >
+                            <Network className="w-3.5 h-3.5" />
+                            <span>Topology Lab</span>
+                        </button>
+
+                        <button
+                            type="button"
                             onClick={() => setIsCyberChefOpen(true)}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-950/80 border border-cyan-700/80 text-cyan-300 hover:bg-cyan-900/80 text-xs font-bold transition shadow-xs"
                             title="Open CyberChef Decoder & Triage Assistant"
