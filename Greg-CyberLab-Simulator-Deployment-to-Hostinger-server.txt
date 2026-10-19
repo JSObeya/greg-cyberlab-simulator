@@ -1,0 +1,64 @@
+Here is the bash code to deploy and update Greg CyberLab Simulator on your Hostinger server (46.202.172.40:65002):
+
+Option 1: Standard Push & Remote Update (Recommended)
+Step 1: Run in your Local Terminal (Git Bash / PowerShell)
+Compile the React/Vite assets, commit the changes, and push them to GitHub:
+
+bash
+# 1. Build the production React & Inertia assets
+npm run build
+# 2. Stage and commit all changes (including compiled public/build assets)
+git add .
+git commit -m "Update courses, cohorts, and programmes management"
+# 3. Push to your main branch
+git push origin main
+Step 2: Connect to Hostinger via SSH
+bash
+ssh -p 65002 u842010817@46.202.172.40
+Step 3: Run this Bash Code in Hostinger SSH Terminal
+bash
+cd ~/domains/gregicthub.com/public_html/cyberlab
+# Discard local file differences and pull latest commit
+git reset --hard HEAD
+git pull origin main
+# Run any pending database migrations
+php artisan migrate --force
+# Clear old caches and re-cache for production speed
+php artisan optimize:clear
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+# Ensure storage symbolic link is active
+php artisan storage:link
+Option 2: Automated Single Command (deploy.sh)
+A deployment script has been created in your project root at 
+
+deploy.sh
+:
+
+To run remotely on Hostinger:
+
+bash
+cd ~/domains/gregicthub.com/public_html/cyberlab
+bash deploy.sh
+Or to do everything from your local Git Bash / WSL terminal (builds, commits, pushes, and triggers remote Hostinger update):
+
+bash
+bash deploy.sh --local
+Option 3: Direct Upload via rsync (Without Git)
+If you ever want to upload directly from your local terminal to Hostinger without committing to GitHub:
+
+bash
+# From c:/laragon/www/greg-cyberlab-simulator in Git Bash / WSL:
+npm run build
+rsync -avz -e "ssh -p 65002" \
+  --exclude='node_modules' \
+  --exclude='.git' \
+  --exclude='.env' \
+  --exclude='storage/logs/*' \
+  --exclude='storage/framework/cache/*' \
+  --exclude='storage/framework/sessions/*' \
+  --exclude='storage/framework/views/*' \
+  ./ u842010817@46.202.172.40:/home/u842010817/domains/gregicthub.com/public_html/cyberlab/
+# Then clear cache on the server:
+ssh -p 65002 u842010817@46.202.172.40 "cd ~/domains/gregicthub.com/public_html/cyberlab && php artisan optimize:clear && php artisan config:cache && php artisan route:cache && php artisan view:cache"

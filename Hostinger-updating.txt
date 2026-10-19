@@ -1,16 +1,32 @@
 Hostinger-updating for greg-cyberlab-simulator
 
-ssh -p 65002 u842010817@46.202.172.40 (Gregict.com@1)
+SSH Details:
+ssh -p 65002 u842010817@46.202.172.40
+Password: (Your Hostinger SSH password)
 
+Target Directory:
 cd /home/u842010817/domains/gregicthub.com/public_html/cyberlab
+# or: cd ~/domains/gregicthub.com/public_html/cyberlab
 
+---------------------------------------------------------
+Option 1: Quick Paste in Hostinger SSH Terminal
+---------------------------------------------------------
 cd ~/domains/gregicthub.com/public_html/cyberlab
-
-# 1. Pull the new CyberChef integration
+git reset --hard HEAD
 git pull origin main
-
-# 2. Clear Laravel caches
+php artisan migrate --force
 php artisan optimize:clear
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
+php artisan storage:link
+
+---------------------------------------------------------
+Option 2: Using deploy.sh remotely
+---------------------------------------------------------
+bash deploy.sh
+
+---------------------------------------------------------
+Option 3: Run from local machine (Git Bash / WSL)
+---------------------------------------------------------
+bash deploy.sh --local

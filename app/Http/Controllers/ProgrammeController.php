@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -55,7 +56,7 @@ class ProgrammeController extends Controller
             'objectives' => 'nullable|string',
         ]);
 
-        $validated['slug'] = Str::slug($validated['title']) . '-' . Str::lower($validated['code']);
+        $validated['slug'] = Str::slug($validated['title']).'-'.Str::lower($validated['code']);
         $validated['is_active'] = true;
         $validated['status'] = 'active';
 
@@ -75,7 +76,7 @@ class ProgrammeController extends Controller
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'code' => 'required|string|max:50|unique:programmes,code,' . $programme->id,
+            'code' => ['required', 'string', 'max:50', Rule::unique('programmes', 'code')->ignore($programme->id)],
             'department' => 'required|string|max:255',
             'duration' => 'required|string|max:100',
             'delivery_mode' => 'required|in:online,in_person,hybrid',

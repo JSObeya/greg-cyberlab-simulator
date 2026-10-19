@@ -95,4 +95,56 @@ class LmsAcademicCoreTest extends TestCase
         ]);
         $postResponse->assertStatus(403);
     }
+
+    public function test_admin_can_update_academic_programme(): void
+    {
+        $admin = User::where('role', UserRole::SUPER_ADMIN)->first();
+        $programme = Programme::first();
+
+        $updateData = [
+            'title' => 'Updated Cyber Operations Programme',
+            'code' => $programme->code,
+            'department' => 'Advanced Cyber Defence',
+            'duration' => '4 Months (Specialized)',
+            'delivery_mode' => 'hybrid',
+            'coordinator_id' => $admin->id,
+            'description' => 'Updated curriculum description with advanced simulated operations.',
+            'entry_requirements' => 'Prerequisite completed.',
+            'objectives' => 'Master cyber defence protocols.',
+            'is_active' => true,
+        ];
+
+        $response = $this->actingAs($admin)->put(route('admin.programmes.update', $programme), $updateData);
+        $response->assertRedirect();
+
+        $programme->refresh();
+        $this->assertEquals('Updated Cyber Operations Programme', $programme->title);
+        $this->assertEquals('Advanced Cyber Defence', $programme->department);
+    }
+
+    public function test_admin_can_update_cohort(): void
+    {
+        $admin = User::where('role', UserRole::SUPER_ADMIN)->first();
+        $cohort = Cohort::first();
+
+        $updateData = [
+            'course_id' => $cohort->course_id,
+            'programme_id' => $cohort->programme_id,
+            'academic_session_id' => $cohort->academic_session_id,
+            'name' => 'Renamed Cyber Cadets Cohort',
+            'code' => $cohort->code,
+            'start_date' => '2026-11-01',
+            'end_date' => '2027-02-28',
+            'max_capacity' => 45,
+            'status' => 'active',
+            'is_active' => true,
+        ];
+
+        $response = $this->actingAs($admin)->put(route('cohorts.update', $cohort), $updateData);
+        $response->assertRedirect();
+
+        $cohort->refresh();
+        $this->assertEquals('Renamed Cyber Cadets Cohort', $cohort->name);
+        $this->assertEquals(45, $cohort->max_capacity);
+    }
 }

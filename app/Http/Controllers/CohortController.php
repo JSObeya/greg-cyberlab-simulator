@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AcademicSession;
 use App\Models\Cohort;
 use App\Models\Course;
+use App\Models\Programme;
 use App\Models\User;
 use App\Services\Audit\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -23,8 +26,8 @@ class CohortController extends Controller
 
         $cohorts = Cohort::with(['course', 'programme', 'academicSession', 'instructors', 'users'])->latest()->get();
         $courses = Course::select('id', 'title', 'programme_id')->get();
-        $programmes = \App\Models\Programme::select('id', 'title', 'code')->get();
-        $sessions = \App\Models\AcademicSession::select('id', 'name', 'code')->get();
+        $programmes = Programme::select('id', 'title', 'code')->get();
+        $sessions = AcademicSession::select('id', 'name', 'code')->get();
         $instructors = User::whereIn('role', ['instructor', 'academic_coordinator', 'teaching_assistant', 'admin'])
             ->select('id', 'name', 'email')
             ->get();
@@ -80,6 +83,50 @@ class CohortController extends Controller
         AuditService::record('cohort_created', 'Cohort', $cohort->id, $validated);
 
         return redirect()->back()->with('success', 'Cohort successfully established.');
+    }
+
+    public function update(Request $request, Cohort $cohort): RedirectResponse
+    {
+        $user = Auth::user();
+        if (! $user->isAdmin() && ! $user->isAcademicCoordinator()) {
+            abort(403, 'Only administrators or academic coordinators can update cohorts.');
+        }
+
+        $validated = $request->validate([
+            'course_id' => 'required|exists:courses,id',
+            'programme_id' => 'nullable|exists:programmes,id',
+            'academic_session_id' => 'nullable|exists:academic_sessions,id',
+            'name' => 'required|string|max:255',
+            'code' => ['required', 'string', 'max:50', Rule::unique('cohorts', 'code')->ignore($cohort->id)],
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+            'max_capacity' => 'nullable|integer|min:1',
+            'status' => 'nullable|string|in:active,completed,archived,upcoming',
+            'is_active' => 'nullable|boolean',
+            'instructor_ids' => 'nullable|array',
+            'instructor_ids.*' => 'exists:users,id',
+        ]);
+
+        $cohort->update([
+            'course_id' => $validated['course_id'],
+            'programme_id' => $validated['programme_id'] ?? null,
+            'academic_session_id' => $validated['academic_session_id'] ?? null,
+            'name' => $validated['name'],
+            'code' => $validated['code'],
+            'start_date' => $validated['start_date'] ?? null,
+            'end_date' => $validated['end_date'] ?? null,
+            'max_capacity' => $validated['max_capacity'] ?? $cohort->max_capacity,
+            'status' => $validated['status'] ?? $cohort->status ?? 'active',
+            'is_active' => $request->has('is_active') ? (bool) $validated['is_active'] : $cohort->is_active,
+        ]);
+
+        if (array_key_exists('instructor_ids', $validated)) {
+            $cohort->instructors()->sync($validated['instructor_ids'] ?? []);
+        }
+
+        AuditService::record('cohort_updated', 'Cohort', $cohort->id, $validated);
+
+        return redirect()->back()->with('success', 'Cohort updated successfully.');
     }
 
     public function enroll(Request $request, Cohort $cohort): RedirectResponse

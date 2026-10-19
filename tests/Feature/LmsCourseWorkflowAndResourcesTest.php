@@ -6,7 +6,6 @@ use App\Enums\UserRole;
 use App\Models\Course;
 use App\Models\LearningResource;
 use App\Models\Lesson;
-use App\Models\Module;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -139,5 +138,85 @@ class LmsCourseWorkflowAndResourcesTest extends TestCase
 
         $resource->refresh();
         $this->assertEquals(1, $resource->download_count);
+    }
+
+    public function test_instructor_or_admin_can_create_course(): void
+    {
+        $admin = User::where('role', UserRole::SUPER_ADMIN)->first();
+        $instructor = User::where('role', UserRole::INSTRUCTOR)->first();
+
+        $courseData = [
+            'title' => 'Malware Reverse Engineering & Triage',
+            'code' => 'MRE-301',
+            'summary' => 'Deep dive into static and dynamic binary analysis in isolated sandbox.',
+            'description' => 'Comprehensive technical training on decompilation, API hooks, and indicators of compromise.',
+            'level' => 'advanced',
+            'credit_hours' => 4,
+            'estimated_duration_hours' => 60,
+            'passing_score' => 75,
+            'status' => 'published',
+            'instructor_ids' => [$instructor->id],
+        ];
+
+        $response = $this->actingAs($admin)->post(route('courses.store'), $courseData);
+        $response->assertRedirect();
+
+        $this->assertDatabaseHas('courses', [
+            'code' => 'MRE-301',
+            'title' => 'Malware Reverse Engineering & Triage',
+            'level' => 'advanced',
+            'is_published' => true,
+        ]);
+
+        $created = Course::where('code', 'MRE-301')->first();
+        $this->assertCount(1, $created->instructors);
+    }
+
+    public function test_instructor_or_admin_can_update_course(): void
+    {
+        $admin = User::where('role', UserRole::SUPER_ADMIN)->first();
+        $course = Course::first();
+
+        $updateData = [
+            'title' => 'Updated Cyber Fundamentals Course',
+            'code' => 'CYB-101-REV',
+            'summary' => 'Updated curriculum summary.',
+            'description' => 'Updated full syllabus description for active trainees.',
+            'level' => 'intermediate',
+            'credit_hours' => 4,
+            'estimated_duration_hours' => 45,
+            'passing_score' => 80,
+            'status' => 'published',
+            'is_published' => true,
+        ];
+
+        $response = $this->actingAs($admin)->put(route('courses.update', $course), $updateData);
+        $response->assertRedirect();
+
+        $course->refresh();
+        $this->assertEquals('Updated Cyber Fundamentals Course', $course->title);
+        $this->assertEquals('CYB-101-REV', $course->code);
+        $this->assertEquals('intermediate', $course->level);
+        $this->assertEquals(80, $course->passing_score);
+    }
+
+    public function test_trainee_is_forbidden_from_creating_or_updating_courses(): void
+    {
+        $trainee = User::where('role', UserRole::TRAINEE)->first();
+        $course = Course::first();
+
+        $postResponse = $this->actingAs($trainee)->post(route('courses.store'), [
+            'title' => 'Unauthorized Course',
+            'description' => 'Trainee attempting course creation',
+            'level' => 'beginner',
+        ]);
+        $postResponse->assertStatus(403);
+
+        $putResponse = $this->actingAs($trainee)->put(route('courses.update', $course), [
+            'title' => 'Unauthorized Modification',
+            'description' => 'Trainee attempting course update',
+            'level' => 'beginner',
+        ]);
+        $putResponse->assertStatus(403);
     }
 }
