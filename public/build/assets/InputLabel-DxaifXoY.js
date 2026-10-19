@@ -1,1 +1,0 @@
-import{t as e}from"./app-8QKlvV-Z.js";var t=e();function n({value:e,className:n=``,children:r,...i}){return(0,t.jsx)(`label`,{...i,className:`block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wide `+n,children:e||r})}export{n as t};

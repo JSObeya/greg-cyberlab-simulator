@@ -88,8 +88,16 @@ class CohortController extends Controller
     public function update(Request $request, Cohort $cohort): RedirectResponse
     {
         $user = Auth::user();
-        if (! $user->isAdmin() && ! $user->isAcademicCoordinator()) {
-            abort(403, 'Only administrators or academic coordinators can update cohorts.');
+        if (! $user->isAdmin() && ! $user->isAcademicCoordinator() && ! $user->isInstructor()) {
+            abort(403, 'Only administrators, academic coordinators, or instructors can update cohorts.');
+        }
+
+        if ($request->input('programme_id') === '' || $request->input('programme_id') === 'null') {
+            $request->merge(['programme_id' => null]);
+        }
+
+        if ($request->input('academic_session_id') === '' || $request->input('academic_session_id') === 'null') {
+            $request->merge(['academic_session_id' => null]);
         }
 
         $validated = $request->validate([

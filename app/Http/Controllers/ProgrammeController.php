@@ -74,6 +74,10 @@ class ProgrammeController extends Controller
             abort(403, 'Unauthorized to modify academic programmes.');
         }
 
+        if ($request->input('coordinator_id') === '' || $request->input('coordinator_id') === 'null') {
+            $request->merge(['coordinator_id' => null]);
+        }
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'code' => ['required', 'string', 'max:50', Rule::unique('programmes', 'code')->ignore($programme->id)],

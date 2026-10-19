@@ -200,6 +200,34 @@ class LmsCourseWorkflowAndResourcesTest extends TestCase
         $this->assertEquals(80, $course->passing_score);
     }
 
+    public function test_course_can_be_updated_with_compound_level_and_empty_programme(): void
+    {
+        $admin = User::where('role', UserRole::SUPER_ADMIN)->first();
+        $course = Course::where('slug', 'cybersecurity-fundamentals-soc-triage')->first();
+
+        $response = $this->actingAs($admin)->put(route('courses.update', $course), [
+            'title' => 'SOC Practical Operations Curriculum',
+            'code' => 'CYB-101-COMPOUND',
+            'programme_id' => '',
+            'level' => 'beginner_to_intermediate',
+            'description' => '',
+            'summary' => 'Short summary for compound test',
+            'credit_hours' => 3,
+            'estimated_duration_hours' => 40,
+            'passing_score' => 75,
+            'status' => 'published',
+            'is_published' => true,
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $response->assertRedirect();
+
+        $course->refresh();
+        $this->assertEquals('SOC Practical Operations Curriculum', $course->title);
+        $this->assertEquals('beginner_to_intermediate', $course->level);
+        $this->assertNull($course->programme_id);
+    }
+
     public function test_trainee_is_forbidden_from_creating_or_updating_courses(): void
     {
         $trainee = User::where('role', UserRole::TRAINEE)->first();

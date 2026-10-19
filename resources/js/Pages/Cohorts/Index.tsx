@@ -131,7 +131,17 @@ export default function CohortsIndex({
 
     const handleCreateSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        createForm.transform((data) => ({
+            ...data,
+            course_id: Number(data.course_id),
+            programme_id: data.programme_id ? Number(data.programme_id) : null,
+            academic_session_id: data.academic_session_id ? Number(data.academic_session_id) : null,
+            max_capacity: Number(data.max_capacity) || 30,
+        }));
+
         createForm.post(route('cohorts.store'), {
+            preserveScroll: true,
             onSuccess: () => {
                 createForm.reset();
                 setIsCreating(false);
@@ -149,8 +159,8 @@ export default function CohortsIndex({
 
         editForm.setData({
             course_id: cohort.course_id || '',
-            programme_id: cohort.programme_id || '',
-            academic_session_id: cohort.academic_session_id || '',
+            programme_id: cohort.programme_id ? String(cohort.programme_id) : '',
+            academic_session_id: cohort.academic_session_id ? String(cohort.academic_session_id) : '',
             name: cohort.name || '',
             code: cohort.code || '',
             start_date: formatDateForInput(cohort.start_date),
@@ -166,9 +176,19 @@ export default function CohortsIndex({
         e.preventDefault();
         if (!editingCohort) return;
 
+        editForm.transform((data) => ({
+            ...data,
+            course_id: Number(data.course_id),
+            programme_id: data.programme_id ? Number(data.programme_id) : null,
+            academic_session_id: data.academic_session_id ? Number(data.academic_session_id) : null,
+            max_capacity: Number(data.max_capacity) || 30,
+        }));
+
         editForm.put(route('cohorts.update', editingCohort.id), {
+            preserveScroll: true,
             onSuccess: () => {
                 setEditingCohort(null);
+                editForm.reset();
             },
         });
     };
@@ -223,6 +243,20 @@ export default function CohortsIndex({
                                 Academy Stream
                             </span>
                         </div>
+
+                        {Object.keys(createForm.errors).length > 0 && (
+                            <div className="p-3.5 bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-900 rounded-xl text-red-700 dark:text-red-300 text-xs space-y-1">
+                                <p className="font-bold flex items-center gap-1.5">
+                                    <X className="w-4 h-4 text-red-600" />
+                                    Please correct the following errors:
+                                </p>
+                                <ul className="list-disc list-inside space-y-0.5 text-[11px]">
+                                    {Object.entries(createForm.errors).map(([key, err]) => (
+                                        <li key={key}>{err}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
                             <div>
@@ -581,6 +615,20 @@ export default function CohortsIndex({
                                     <X className="w-5 h-5" />
                                 </button>
                             </div>
+
+                            {Object.keys(editForm.errors).length > 0 && (
+                                <div className="p-3.5 bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-900 rounded-xl text-red-700 dark:text-red-300 text-xs space-y-1">
+                                    <p className="font-bold flex items-center gap-1.5">
+                                        <X className="w-4 h-4 text-red-600" />
+                                        Please correct the following errors:
+                                    </p>
+                                    <ul className="list-disc list-inside space-y-0.5 text-[11px]">
+                                        {Object.entries(editForm.errors).map(([key, err]) => (
+                                            <li key={key}>{err}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                                 <div>

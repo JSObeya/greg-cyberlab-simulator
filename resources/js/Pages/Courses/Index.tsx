@@ -100,7 +100,17 @@ export default function CoursesIndex({
 
     const handleCreateSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        createForm.transform((data) => ({
+            ...data,
+            programme_id: data.programme_id ? Number(data.programme_id) : null,
+            credit_hours: Number(data.credit_hours) || 3,
+            estimated_duration_hours: Number(data.estimated_duration_hours) || 40,
+            passing_score: Number(data.passing_score) || 70,
+        }));
+
         createForm.post(route('courses.store'), {
+            preserveScroll: true,
             onSuccess: () => {
                 createForm.reset();
                 setIsCreating(false);
@@ -119,7 +129,7 @@ export default function CoursesIndex({
         editForm.setData({
             title: course.title || '',
             code: course.code || '',
-            programme_id: course.programme_id || '',
+            programme_id: course.programme_id ? String(course.programme_id) : '',
             level: course.level || 'beginner',
             credit_hours: course.credit_hours || 3,
             estimated_duration_hours: course.estimated_duration_hours || 40,
@@ -136,9 +146,19 @@ export default function CoursesIndex({
         e.preventDefault();
         if (!editingCourse) return;
 
+        editForm.transform((data) => ({
+            ...data,
+            programme_id: data.programme_id ? Number(data.programme_id) : null,
+            credit_hours: Number(data.credit_hours) || 3,
+            estimated_duration_hours: Number(data.estimated_duration_hours) || 40,
+            passing_score: Number(data.passing_score) || 70,
+        }));
+
         editForm.put(route('courses.update', editingCourse.id), {
+            preserveScroll: true,
             onSuccess: () => {
                 setEditingCourse(null);
+                editForm.reset();
             },
         });
     };
@@ -205,6 +225,20 @@ export default function CoursesIndex({
                             </span>
                         </div>
 
+                        {Object.keys(createForm.errors).length > 0 && (
+                            <div className="p-3.5 bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-900 rounded-xl text-red-700 dark:text-red-300 text-xs space-y-1">
+                                <p className="font-bold flex items-center gap-1.5">
+                                    <X className="w-4 h-4 text-red-600" />
+                                    Please correct the following errors:
+                                </p>
+                                <ul className="list-disc list-inside space-y-0.5 text-[11px]">
+                                    {Object.entries(createForm.errors).map(([key, err]) => (
+                                        <li key={key}>{err}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
                             <div className="lg:col-span-2">
                                 <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
@@ -265,6 +299,8 @@ export default function CoursesIndex({
                                     <option value="beginner">Beginner (Foundational)</option>
                                     <option value="intermediate">Intermediate (Practitioner)</option>
                                     <option value="advanced">Advanced (Specialist / SOC)</option>
+                                    <option value="beginner_to_intermediate">Beginner to Intermediate</option>
+                                    <option value="intermediate_to_advanced">Intermediate to Advanced</option>
                                     <option value="all_levels">All Levels</option>
                                 </select>
                             </div>
@@ -594,6 +630,20 @@ export default function CoursesIndex({
                                 </button>
                             </div>
 
+                            {Object.keys(editForm.errors).length > 0 && (
+                                <div className="p-3.5 bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-900 rounded-xl text-red-700 dark:text-red-300 text-xs space-y-1">
+                                    <p className="font-bold flex items-center gap-1.5">
+                                        <X className="w-4 h-4 text-red-600" />
+                                        Please correct the following errors:
+                                    </p>
+                                    <ul className="list-disc list-inside space-y-0.5 text-[11px]">
+                                        {Object.entries(editForm.errors).map(([key, err]) => (
+                                            <li key={key}>{err}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
                                 <div className="lg:col-span-2">
                                     <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
@@ -653,6 +703,8 @@ export default function CoursesIndex({
                                         <option value="beginner">Beginner (Foundational)</option>
                                         <option value="intermediate">Intermediate (Practitioner)</option>
                                         <option value="advanced">Advanced (Specialist / SOC)</option>
+                                        <option value="beginner_to_intermediate">Beginner to Intermediate</option>
+                                        <option value="intermediate_to_advanced">Intermediate to Advanced</option>
                                         <option value="all_levels">All Levels</option>
                                     </select>
                                     {editForm.errors.level && <p className="text-red-500 text-[10px] mt-1">{editForm.errors.level}</p>}

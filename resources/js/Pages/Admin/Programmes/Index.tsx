@@ -81,7 +81,14 @@ export default function ProgrammesIndex({ programmes, coordinators }: Programmes
 
     const handleCreateSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        createForm.transform((data) => ({
+            ...data,
+            coordinator_id: data.coordinator_id ? Number(data.coordinator_id) : null,
+        }));
+
         createForm.post(route('admin.programmes.store'), {
+            preserveScroll: true,
             onSuccess: () => {
                 createForm.reset();
                 setIsCreating(false);
@@ -98,7 +105,7 @@ export default function ProgrammesIndex({ programmes, coordinators }: Programmes
             department: prog.department || '',
             duration: prog.duration || '',
             delivery_mode: prog.delivery_mode || 'hybrid',
-            coordinator_id: prog.coordinator_id || '',
+            coordinator_id: prog.coordinator_id ? String(prog.coordinator_id) : '',
             description: prog.description || '',
             entry_requirements: prog.entry_requirements || '',
             objectives: prog.objectives || '',
@@ -110,9 +117,16 @@ export default function ProgrammesIndex({ programmes, coordinators }: Programmes
         e.preventDefault();
         if (!editingProgramme) return;
 
+        editForm.transform((data) => ({
+            ...data,
+            coordinator_id: data.coordinator_id ? Number(data.coordinator_id) : null,
+        }));
+
         editForm.put(route('admin.programmes.update', editingProgramme.id), {
+            preserveScroll: true,
             onSuccess: () => {
                 setEditingProgramme(null);
+                editForm.reset();
             },
         });
     };
@@ -157,6 +171,20 @@ export default function ProgrammesIndex({ programmes, coordinators }: Programmes
                                 LMS Core
                             </span>
                         </div>
+
+                        {Object.keys(createForm.errors).length > 0 && (
+                            <div className="p-3.5 bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-900 rounded-xl text-red-700 dark:text-red-300 text-xs space-y-1">
+                                <p className="font-bold flex items-center gap-1.5">
+                                    <X className="w-4 h-4 text-red-600" />
+                                    Please correct the following errors:
+                                </p>
+                                <ul className="list-disc list-inside space-y-0.5 text-[11px]">
+                                    {Object.entries(createForm.errors).map(([key, err]) => (
+                                        <li key={key}>{err}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                             <div>
@@ -399,6 +427,20 @@ export default function ProgrammesIndex({ programmes, coordinators }: Programmes
                                     <X className="w-5 h-5" />
                                 </button>
                             </div>
+
+                            {Object.keys(editForm.errors).length > 0 && (
+                                <div className="p-3.5 bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-900 rounded-xl text-red-700 dark:text-red-300 text-xs space-y-1">
+                                    <p className="font-bold flex items-center gap-1.5">
+                                        <X className="w-4 h-4 text-red-600" />
+                                        Please correct the following errors:
+                                    </p>
+                                    <ul className="list-disc list-inside space-y-0.5 text-[11px]">
+                                        {Object.entries(editForm.errors).map(([key, err]) => (
+                                            <li key={key}>{err}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                                 <div>

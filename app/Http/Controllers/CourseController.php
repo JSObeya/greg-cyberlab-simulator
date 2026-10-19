@@ -55,13 +55,17 @@ class CourseController extends Controller
             abort(403, 'Unauthorized to create courses.');
         }
 
+        if ($request->input('programme_id') === '' || $request->input('programme_id') === 'null') {
+            $request->merge(['programme_id' => null]);
+        }
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'code' => 'nullable|string|max:50',
             'programme_id' => 'nullable|exists:programmes,id',
             'summary' => 'nullable|string|max:1000',
-            'description' => 'required|string',
-            'level' => 'required|string|in:beginner,intermediate,advanced,all_levels',
+            'description' => 'nullable|string',
+            'level' => 'required|string|max:50',
             'credit_hours' => 'nullable|integer|min:1|max:120',
             'estimated_duration_hours' => 'nullable|integer|min:1|max:1000',
             'passing_score' => 'nullable|integer|min:1|max:100',
@@ -86,7 +90,7 @@ class CourseController extends Controller
             'slug' => $slug,
             'code' => $validated['code'] ?? null,
             'summary' => $validated['summary'] ?? null,
-            'description' => $validated['description'],
+            'description' => $validated['description'] ?? '',
             'level' => $validated['level'],
             'credit_hours' => $validated['credit_hours'] ?? 3,
             'estimated_duration_hours' => $validated['estimated_duration_hours'] ?? 40,
@@ -117,13 +121,17 @@ class CourseController extends Controller
             abort(403, 'Unauthorized to update courses.');
         }
 
+        if ($request->input('programme_id') === '' || $request->input('programme_id') === 'null') {
+            $request->merge(['programme_id' => null]);
+        }
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'code' => 'nullable|string|max:50',
             'programme_id' => 'nullable|exists:programmes,id',
             'summary' => 'nullable|string|max:1000',
-            'description' => 'required|string',
-            'level' => 'required|string|in:beginner,intermediate,advanced,all_levels',
+            'description' => 'nullable|string',
+            'level' => 'required|string|max:50',
             'credit_hours' => 'nullable|integer|min:1|max:120',
             'estimated_duration_hours' => 'nullable|integer|min:1|max:1000',
             'passing_score' => 'nullable|integer|min:1|max:100',
@@ -142,7 +150,7 @@ class CourseController extends Controller
             'title' => $validated['title'],
             'code' => $validated['code'] ?? null,
             'summary' => $validated['summary'] ?? null,
-            'description' => $validated['description'],
+            'description' => $validated['description'] ?? $course->description ?? '',
             'level' => $validated['level'],
             'credit_hours' => $validated['credit_hours'] ?? $course->credit_hours,
             'estimated_duration_hours' => $validated['estimated_duration_hours'] ?? $course->estimated_duration_hours,
@@ -150,6 +158,10 @@ class CourseController extends Controller
             'status' => $validated['status'] ?? $course->status,
             'is_published' => $isPublished,
         ];
+
+        if (empty($course->slug)) {
+            $updateData['slug'] = Str::slug($validated['title']) ?: 'course-'.$course->id;
+        }
 
         if ($isPublished && ! $course->is_published) {
             $updateData['published_at'] = now();
