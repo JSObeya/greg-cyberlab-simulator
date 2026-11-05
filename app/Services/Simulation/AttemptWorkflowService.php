@@ -8,7 +8,6 @@ use App\Models\Laboratory;
 use App\Models\User;
 use App\Services\Assessment\CurriculumRubricScoringService;
 use App\Services\Audit\AuditService;
-use Illuminate\Validation\ValidationException;
 
 class AttemptWorkflowService
 {
@@ -22,31 +21,51 @@ class AttemptWorkflowService
     public function checkPrerequisites(User $user, Laboratory $laboratory): bool
     {
         // Instructors and admins can always access all labs
-        if ($user->isAdmin() || $user->isInstructor()) {
+        if ($user->isAdmin() || $user->isInstructor() || $user->isAcademicCoordinator()) {
             return true;
         }
 
-        // Lab 1 has no prerequisites
-        if ($laboratory->id === 1 || $laboratory->slug === 'cybersecurity-lab-orientation-and-rules') {
+        // Check if laboratory has explicit prerequisites defined
+        if (! empty($laboratory->prerequisites) && is_array($laboratory->prerequisites)) {
+            foreach ($laboratory->prerequisites as $prereqSlug) {
+                $prereqLab = Laboratory::where('slug', $prereqSlug)->first();
+                if ($prereqLab) {
+                    $passed = Attempt::where('user_id', $user->id)
+                        ->where('laboratory_id', $prereqLab->id)
+                        ->where('is_passed', true)
+                        ->where('final_score', '>=', $prereqLab->passing_score ?? 70)
+                        ->exists();
+
+                    if (! $passed) {
+                        return false;
+                    }
+                }
+            }
+
             return true;
         }
 
-        // For Labs 2 through 15: Laboratory 1 must be PASSED with at least 80%
-        $lab1 = Laboratory::where('id', 1)
-            ->orWhere('slug', 'cybersecurity-lab-orientation-and-rules')
-            ->first();
-
-        if (! $lab1) {
+        // Course 1 (CYB-101): Lab 1 has no prerequisites
+        if ($laboratory->slug === 'cybersecurity-lab-orientation-and-rules' || $laboratory->slug === 'naval-cyber-warfare-threat-surface-assessment') {
             return true;
         }
 
-        $passedLab1Attempt = Attempt::where('user_id', $user->id)
-            ->where('laboratory_id', $lab1->id)
-            ->where('is_passed', true)
-            ->where('final_score', '>=', 80)
-            ->exists();
+        // For Course 1 CYB-101 Labs: Laboratory 1 must be PASSED with at least 80%
+        if ($laboratory->course_id === 1) {
+            $lab1 = Laboratory::where('slug', 'cybersecurity-lab-orientation-and-rules')->first();
 
-        return $passedLab1Attempt;
+            if (! $lab1) {
+                return true;
+            }
+
+            return Attempt::where('user_id', $user->id)
+                ->where('laboratory_id', $lab1->id)
+                ->where('is_passed', true)
+                ->where('final_score', '>=', 80)
+                ->exists();
+        }
+
+        return true;
     }
 
     /**

@@ -38,6 +38,7 @@ if [ "$1" == "--local" ]; then
         git reset --hard HEAD
         git pull origin main
         php artisan migrate --force
+        php artisan db:seed --class=NavalProvostAiProgrammeSeeder --force
         php artisan optimize:clear
         php artisan config:cache
         php artisan route:cache
@@ -60,6 +61,9 @@ git pull origin main
 
 echo "==> Running database migrations..."
 php artisan migrate --force
+
+echo "==> Seeding Naval Provost & AI Programme & Labs..."
+php artisan db:seed --class=NavalProvostAiProgrammeSeeder --force
 
 echo "==> Clearing and caching routes, config, and views..."
 php artisan optimize:clear

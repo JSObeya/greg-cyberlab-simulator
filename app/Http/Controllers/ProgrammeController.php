@@ -22,8 +22,16 @@ class ProgrammeController extends Controller
             abort(403, 'Unauthorized access to programme management.');
         }
 
-        $programmes = Programme::with(['coordinator', 'courses', 'cohorts'])
-            ->withCount(['courses', 'cohorts'])
+        $programmes = Programme::with([
+            'coordinator',
+            'courses',
+            'cohorts',
+            'users' => function ($q) {
+                $q->select('users.id', 'users.name', 'users.email', 'users.role')
+                    ->withPivot('enrolled_at', 'status', 'notes');
+            },
+        ])
+            ->withCount(['courses', 'cohorts', 'users'])
             ->latest()
             ->get();
 
@@ -31,9 +39,14 @@ class ProgrammeController extends Controller
             ->select('id', 'name', 'email', 'role')
             ->get();
 
+        $allUsers = User::select('id', 'name', 'email', 'role')
+            ->orderBy('name')
+            ->get();
+
         return Inertia::render('Admin/Programmes/Index', [
             'programmes' => $programmes,
             'coordinators' => $coordinators,
+            'allUsers' => $allUsers,
         ]);
     }
 
@@ -96,5 +109,64 @@ class ProgrammeController extends Controller
         AuditService::record('programme_updated', 'Programme', $programme->id, $validated);
 
         return redirect()->back()->with('success', 'Academic programme updated successfully.');
+    }
+
+    /**
+     * Assign one or multiple users/trainees to an academic programme.
+     */
+    public function assignUsers(Request $request, Programme $programme): RedirectResponse
+    {
+        $user = Auth::user();
+        if (! $user->isAdmin() && ! $user->isAcademicCoordinator()) {
+            abort(403, 'Unauthorized to assign trainees to programmes.');
+        }
+
+        $validated = $request->validate([
+            'user_ids' => 'required|array|min:1',
+            'user_ids.*' => 'exists:users,id',
+            'status' => 'nullable|string|in:active,completed,suspended,dropped',
+            'notes' => 'nullable|string',
+        ]);
+
+        $status = $validated['status'] ?? 'active';
+        $notes = $validated['notes'] ?? null;
+
+        $attachData = [];
+        foreach ($validated['user_ids'] as $uid) {
+            $attachData[$uid] = [
+                'enrolled_at' => now(),
+                'status' => $status,
+                'notes' => $notes,
+            ];
+        }
+
+        $programme->users()->syncWithoutDetaching($attachData);
+
+        AuditService::record('programme_users_assigned', 'Programme', $programme->id, [
+            'assigned_user_ids' => $validated['user_ids'],
+            'status' => $status,
+        ]);
+
+        return redirect()->back()->with('success', count($validated['user_ids']).' user(s) assigned to programme successfully.');
+    }
+
+    /**
+     * Remove a user from an academic programme.
+     */
+    public function removeUser(Programme $programme, User $user): RedirectResponse
+    {
+        $currentUser = Auth::user();
+        if (! $currentUser->isAdmin() && ! $currentUser->isAcademicCoordinator()) {
+            abort(403, 'Unauthorized to remove users from programmes.');
+        }
+
+        $programme->users()->detach($user->id);
+
+        AuditService::record('programme_user_removed', 'Programme', $programme->id, [
+            'removed_user_id' => $user->id,
+            'user_name' => $user->name,
+        ]);
+
+        return redirect()->back()->with('success', "{$user->name} has been removed from this programme.");
     }
 }

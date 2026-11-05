@@ -20,6 +20,12 @@ import {
 } from 'lucide-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
+interface ProgrammeOption {
+    id: number;
+    title: string;
+    code: string;
+}
+
 interface UserItem {
     id: number;
     name: string;
@@ -28,6 +34,7 @@ interface UserItem {
     phone: string | null;
     is_active: boolean;
     created_at: string;
+    programmes?: ProgrammeOption[];
 }
 
 interface UsersProps {
@@ -42,9 +49,10 @@ interface UsersProps {
         role?: string;
     };
     roles: Array<{ value: string; label: string }>;
+    programmes?: ProgrammeOption[];
 }
 
-export default function UsersManagement({ users, filters, roles }: UsersProps) {
+export default function UsersManagement({ users, filters, roles, programmes = [] }: UsersProps) {
     const { flash } = usePage<any>().props;
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -62,6 +70,7 @@ export default function UsersManagement({ users, filters, roles }: UsersProps) {
         role: 'trainee',
         phone: '',
         password: '',
+        programme_ids: [] as number[],
     });
 
     // Form for Updating Existing User
@@ -72,6 +81,7 @@ export default function UsersManagement({ users, filters, roles }: UsersProps) {
         phone: '',
         is_active: true,
         password: '',
+        programme_ids: [] as number[],
     });
 
     // Form for Bulk CSV Import
@@ -111,6 +121,7 @@ export default function UsersManagement({ users, filters, roles }: UsersProps) {
             phone: user.phone || '',
             is_active: user.is_active,
             password: '',
+            programme_ids: user.programmes ? user.programmes.map((p) => p.id) : [],
         });
     };
 
@@ -242,6 +253,7 @@ export default function UsersManagement({ users, filters, roles }: UsersProps) {
                                 <tr>
                                     <th className="py-3 px-6">User</th>
                                     <th className="py-3 px-6">Role</th>
+                                    <th className="py-3 px-6">Programmes</th>
                                     <th className="py-3 px-6">Status</th>
                                     <th className="py-3 px-6">Phone</th>
                                     <th className="py-3 px-6">Registered</th>
@@ -259,6 +271,23 @@ export default function UsersManagement({ users, filters, roles }: UsersProps) {
                                             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                                                 {user.role}
                                             </span>
+                                        </td>
+                                        <td className="py-3 px-6">
+                                            {user.programmes && user.programmes.length > 0 ? (
+                                                <div className="flex flex-wrap gap-1">
+                                                    {user.programmes.map((p) => (
+                                                        <span
+                                                            key={p.id}
+                                                            title={p.title}
+                                                            className="inline-block px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/70 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-mono text-[10px] font-bold"
+                                                        >
+                                                            {p.code}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <span className="text-slate-400 text-[11px] italic">None</span>
+                                            )}
                                         </td>
                                         <td className="py-3 px-6">
                                             {user.is_active ? (
@@ -511,6 +540,37 @@ export default function UsersManagement({ users, filters, roles }: UsersProps) {
                                     </div>
                                     {createForm.errors.password && <p className="mt-1 text-xs text-red-600">{createForm.errors.password}</p>}
                                 </div>
+
+                                {programmes.length > 0 && (
+                                    <div>
+                                        <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                            Assign to Academic Programme(s)
+                                        </label>
+                                        <div className="max-h-32 overflow-y-auto rounded-xl border border-slate-300 dark:border-slate-700 p-2 space-y-1">
+                                            {programmes.map((prog) => {
+                                                const isChecked = createForm.data.programme_ids.includes(prog.id);
+                                                return (
+                                                    <label key={prog.id} className="flex items-center gap-2 cursor-pointer text-xs p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isChecked}
+                                                            onChange={() => {
+                                                                if (isChecked) {
+                                                                    createForm.setData('programme_ids', createForm.data.programme_ids.filter((id) => id !== prog.id));
+                                                                } else {
+                                                                    createForm.setData('programme_ids', [...createForm.data.programme_ids, prog.id]);
+                                                                }
+                                                            }}
+                                                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                                        />
+                                                        <span className="font-mono text-[10px] text-blue-600 dark:text-blue-400 font-bold">[{prog.code}]</span>
+                                                        <span className="text-slate-700 dark:text-slate-200 truncate">{prog.title}</span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
@@ -625,6 +685,37 @@ export default function UsersManagement({ users, filters, roles }: UsersProps) {
                                         Account Active & Enabled
                                     </label>
                                 </div>
+
+                                {programmes.length > 0 && (
+                                    <div>
+                                        <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                            Assign to Academic Programme(s)
+                                        </label>
+                                        <div className="max-h-32 overflow-y-auto rounded-xl border border-slate-300 dark:border-slate-700 p-2 space-y-1">
+                                            {programmes.map((prog) => {
+                                                const isChecked = editForm.data.programme_ids.includes(prog.id);
+                                                return (
+                                                    <label key={prog.id} className="flex items-center gap-2 cursor-pointer text-xs p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isChecked}
+                                                            onChange={() => {
+                                                                if (isChecked) {
+                                                                    editForm.setData('programme_ids', editForm.data.programme_ids.filter((id) => id !== prog.id));
+                                                                } else {
+                                                                    editForm.setData('programme_ids', [...editForm.data.programme_ids, prog.id]);
+                                                                }
+                                                            }}
+                                                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                                        />
+                                                        <span className="font-mono text-[10px] text-blue-600 dark:text-blue-400 font-bold">[{prog.code}]</span>
+                                                        <span className="text-slate-700 dark:text-slate-200 truncate">{prog.title}</span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">

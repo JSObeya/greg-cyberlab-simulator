@@ -4,7 +4,7 @@ import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import { Link, usePage } from '@inertiajs/react';
 import { PropsWithChildren, ReactNode } from 'react';
-import { ShieldCheck, Terminal, BookOpen, FileSpreadsheet, User, LogOut, Moon, Sun, ShieldAlert, Users } from 'lucide-react';
+import { ShieldCheck, Terminal, BookOpen, FileSpreadsheet, User, LogOut, Moon, Sun, ShieldAlert, Users, FlaskConical } from 'lucide-react';
 
 export default function Authenticated({
     header,
@@ -64,6 +64,15 @@ export default function Authenticated({
                                     className="text-xs font-bold dark:text-slate-200"
                                 >
                                     Dashboard
+                                </NavLink>
+
+                                <NavLink
+                                    href={route('labs.index')}
+                                    active={route().current('labs.*') || route().current('simulation.*')}
+                                    className="text-xs font-bold dark:text-slate-200 flex items-center gap-1.5"
+                                >
+                                    <FlaskConical className="w-3.5 h-3.5 text-blue-500" />
+                                    <span>Labs</span>
                                 </NavLink>
 
                                 <NavLink
@@ -215,6 +224,9 @@ export default function Authenticated({
                     <div className="space-y-1 pb-3 pt-2">
                         <ResponsiveNavLink href={route('dashboard')} active={route().current('dashboard')}>
                             Dashboard
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink href={route('labs.index')} active={route().current('labs.*') || route().current('simulation.*')}>
+                            Simulation Labs
                         </ResponsiveNavLink>
                         <ResponsiveNavLink href={route('courses.index')} active={route().current('courses.*')}>
                             Curriculum

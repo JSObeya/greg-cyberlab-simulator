@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\UserRole;
+use App\Models\Programme;
 use App\Models\User;
 use App\Services\Audit\AuditService;
 use Illuminate\Http\RedirectResponse;
@@ -25,12 +26,12 @@ class UserController extends Controller
             abort(403, 'Unauthorized access to user management.');
         }
 
-        $query = User::query()->latest();
+        $query = User::query()->with('programmes:id,title,code')->latest();
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
@@ -40,10 +41,16 @@ class UserController extends Controller
 
         $users = $query->paginate(15)->withQueryString();
 
+        $programmes = Programme::where('is_active', true)
+            ->select('id', 'title', 'code')
+            ->orderBy('title')
+            ->get();
+
         return Inertia::render('Admin/Users', [
             'users' => $users,
             'filters' => $request->only(['search', 'role']),
             'roles' => array_map(fn (UserRole $r) => ['value' => $r->value, 'label' => $r->label()], UserRole::cases()),
+            'programmes' => $programmes,
         ]);
     }
 
@@ -63,6 +70,8 @@ class UserController extends Controller
             'role' => 'required|string|in:super_admin,admin,instructor,trainee,auditor',
             'phone' => 'nullable|string|max:30',
             'password' => ['required', Password::defaults()],
+            'programme_ids' => 'nullable|array',
+            'programme_ids.*' => 'exists:programmes,id',
         ]);
 
         $user = User::create([
@@ -74,10 +83,19 @@ class UserController extends Controller
             'is_active' => true,
         ]);
 
+        if (! empty($validated['programme_ids'])) {
+            $attach = [];
+            foreach ($validated['programme_ids'] as $pid) {
+                $attach[$pid] = ['enrolled_at' => now(), 'status' => 'active'];
+            }
+            $user->programmes()->sync($attach);
+        }
+
         AuditService::record('user_created', 'User', $user->id, [
             'name' => $user->name,
             'email' => $user->email,
             'role' => $user->role->value,
+            'programmes' => $validated['programme_ids'] ?? [],
         ]);
 
         return redirect()->back()->with('success', 'User account created successfully.');
@@ -95,11 +113,13 @@ class UserController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
             'role' => 'required|string|in:super_admin,admin,instructor,trainee,auditor',
             'phone' => 'nullable|string|max:30',
             'is_active' => 'required|boolean',
             'password' => ['nullable', Password::defaults()],
+            'programme_ids' => 'nullable|array',
+            'programme_ids.*' => 'exists:programmes,id',
         ]);
 
         $updateData = [
@@ -116,10 +136,19 @@ class UserController extends Controller
 
         $user->update($updateData);
 
+        if (array_key_exists('programme_ids', $validated)) {
+            $attach = [];
+            foreach ($validated['programme_ids'] ?? [] as $pid) {
+                $attach[$pid] = ['enrolled_at' => now(), 'status' => 'active'];
+            }
+            $user->programmes()->sync($attach);
+        }
+
         AuditService::record('user_updated', 'User', $user->id, [
             'role' => $user->role->value,
             'is_active' => $user->is_active,
             'password_changed' => ! empty($validated['password']),
+            'programmes' => $validated['programme_ids'] ?? [],
         ]);
 
         return redirect()->back()->with('success', 'User updated successfully.');
@@ -143,6 +172,7 @@ class UserController extends Controller
 
         return redirect()->back()->with('success', 'User deactivated successfully.');
     }
+
     /**
      * Bulk register users from an uploaded CSV file.
      */
@@ -169,6 +199,7 @@ class UserController extends Controller
         $headers = fgetcsv($fileHandle);
         if (! $headers) {
             fclose($fileHandle);
+
             return redirect()->back()->with('error', 'The uploaded CSV file is empty.');
         }
 
@@ -178,6 +209,7 @@ class UserController extends Controller
 
         if (! in_array('name', $headers) || ! in_array('email', $headers)) {
             fclose($fileHandle);
+
             return redirect()->back()->with('error', 'CSV header must contain at least "name" and "email" columns.');
         }
 
@@ -191,6 +223,7 @@ class UserController extends Controller
             $rowNumber++;
             if (count($row) !== count($headers)) {
                 $skippedCount++;
+
                 continue;
             }
 
@@ -200,12 +233,14 @@ class UserController extends Controller
 
             if (empty($name) || empty($email) || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 $skippedCount++;
+
                 continue;
             }
 
             // Check if user already exists
             if (User::where('email', $email)->exists()) {
                 $skippedCount++;
+
                 continue;
             }
 
@@ -252,10 +287,10 @@ class UserController extends Controller
             'Content-Disposition' => 'attachment; filename="cyberlab_bulk_users_template.csv"',
         ];
 
-        $content = "name,email,role,password,phone\n" .
-                   "Trainee Abubakar,abubakar@gregco.local,trainee,Password@123,+2348011223344\n" .
-                   "Trainee Fatima,fatima@gregco.local,trainee,Password@123,+2348022334455\n" .
-                   "Instructor Chidi,chidi@gregco.local,instructor,Password@123,+2348033445566\n" .
+        $content = "name,email,role,password,phone\n".
+                   "Trainee Abubakar,abubakar@gregco.local,trainee,Password@123,+2348011223344\n".
+                   "Trainee Fatima,fatima@gregco.local,trainee,Password@123,+2348022334455\n".
+                   "Instructor Chidi,chidi@gregco.local,instructor,Password@123,+2348033445566\n".
                    "Security Auditor,auditor@gregco.local,auditor,Password@123,+2348044556677\n";
 
         return response($content, 200, $headers);

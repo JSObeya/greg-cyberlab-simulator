@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\AttemptStatus;
+use App\Enums\LabStatus;
 use App\Models\Attempt;
 use App\Models\Laboratory;
+use App\Models\Programme;
 use App\Services\Assessment\ScoringEngineService;
-use App\Services\Audit\AuditService;
+use App\Services\Simulation\AttemptWorkflowService;
 use App\Services\Simulation\TerminalEngineService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -18,9 +19,117 @@ use Inertia\Response;
 class SimulationController extends Controller
 {
     /**
+     * Display the dedicated Laboratories listing arena.
+     */
+    public function index(Request $request): Response
+    {
+        $user = Auth::user();
+
+        $query = Laboratory::with(['course.programme', 'scenario'])
+            ->where('status', LabStatus::PUBLISHED);
+
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('scenario_background', 'like', "%{$search}%")
+                    ->orWhere('category', 'like', "%{$search}%");
+            });
+        }
+
+        if ($programmeId = $request->input('programme_id')) {
+            $query->whereHas('course', function ($q) use ($programmeId) {
+                $q->where('programme_id', $programmeId);
+            });
+        }
+
+        if ($difficulty = $request->input('difficulty')) {
+            $query->where('difficulty', $difficulty);
+        }
+
+        if ($workspace = $request->input('workspace')) {
+            $query->where('primary_workspace', $workspace);
+        }
+
+        $laboratories = $query->orderBy('course_id')->orderBy('id')->get();
+
+        // Attach user attempts/progress stats
+        $userAttempts = Attempt::where('user_id', $user->id)
+            ->select('id', 'laboratory_id', 'status', 'final_score', 'is_passed', 'submitted_at')
+            ->get()
+            ->groupBy('laboratory_id');
+
+        $labsWithProgress = $laboratories->map(function ($lab) use ($userAttempts) {
+            $attempts = $userAttempts->get($lab->id, collect());
+            $bestAttempt = $attempts->where('is_passed', true)->sortByDesc('final_score')->first()
+                ?? $attempts->sortByDesc('final_score')->first();
+            $isCompleted = $attempts->contains('is_passed', true);
+            $hasActiveAttempt = $attempts->contains(fn ($a) => in_array($a->status->value, ['in_progress', 'safety_acknowledged']));
+
+            return [
+                'id' => $lab->id,
+                'title' => $lab->title,
+                'slug' => $lab->slug,
+                'category' => $lab->category,
+                'difficulty' => $lab->difficulty,
+                'estimated_minutes' => $lab->estimated_minutes,
+                'passing_score' => $lab->passing_score,
+                'primary_workspace' => $lab->primary_workspace,
+                'scenario_background' => $lab->scenario_background,
+                'learning_objectives' => $lab->learning_objectives,
+                'course' => $lab->course ? [
+                    'id' => $lab->course->id,
+                    'title' => $lab->course->title,
+                    'code' => $lab->course->code,
+                    'programme' => $lab->course->programme ? [
+                        'id' => $lab->course->programme->id,
+                        'title' => $lab->course->programme->title,
+                        'code' => $lab->course->programme->code,
+                    ] : null,
+                ] : null,
+                'user_progress' => [
+                    'is_completed' => $isCompleted,
+                    'has_active_attempt' => $hasActiveAttempt,
+                    'attempts_count' => $attempts->count(),
+                    'best_score' => $bestAttempt?->final_score,
+                    'last_attempt_id' => $bestAttempt?->id,
+                ],
+            ];
+        });
+
+        $programmes = Programme::where('is_active', true)
+            ->select('id', 'title', 'code')
+            ->withCount('courses')
+            ->get();
+
+        $workspaces = [
+            ['value' => 'kali_terminal', 'label' => 'Simulated Kali Terminal'],
+            ['value' => 'phishing_analyzer', 'label' => 'Phishing Email Analysis'],
+            ['value' => 'log_auditor', 'label' => 'Log Forensics & Auth Inspection'],
+            ['value' => 'packet_inspector', 'label' => 'PCAP Packet Metadata Inspector'],
+            ['value' => 'soc_queue', 'label' => 'SIEM SOC Alert Queue & Triage'],
+            ['value' => 'general_workbench', 'label' => 'General Defense Workbench'],
+        ];
+
+        $totalLabs = $labsWithProgress->count();
+        $completedCount = $labsWithProgress->where('user_progress.is_completed', true)->count();
+
+        return Inertia::render('Labs/Index', [
+            'laboratories' => $labsWithProgress,
+            'programmes' => $programmes,
+            'workspaces' => $workspaces,
+            'filters' => $request->only(['search', 'programme_id', 'difficulty', 'workspace']),
+            'stats' => [
+                'total_labs' => $totalLabs,
+                'completed_count' => $completedCount,
+                'completion_percentage' => $totalLabs > 0 ? round(($completedCount / $totalLabs) * 100) : 0,
+            ],
+        ]);
+    }
+
+    /**
      * Display the Simulation Lab Arena.
      */
-    public function show(Laboratory $laboratory, \App\Services\Simulation\AttemptWorkflowService $workflowService): Response|RedirectResponse
+    public function show(Laboratory $laboratory, AttemptWorkflowService $workflowService): Response|RedirectResponse
     {
         $user = Auth::user();
 
@@ -44,7 +153,7 @@ class SimulationController extends Controller
     /**
      * Autosave trainee progress without final submission.
      */
-    public function autosave(Request $request, Attempt $attempt, \App\Services\Simulation\AttemptWorkflowService $workflowService): JsonResponse
+    public function autosave(Request $request, Attempt $attempt, AttemptWorkflowService $workflowService): JsonResponse
     {
         $this->authorizeAccess($attempt);
 
@@ -63,7 +172,7 @@ class SimulationController extends Controller
     /**
      * Digitally acknowledge safety rules of engagement.
      */
-    public function acknowledgeSafety(Request $request, Attempt $attempt, \App\Services\Simulation\AttemptWorkflowService $workflowService): JsonResponse
+    public function acknowledgeSafety(Request $request, Attempt $attempt, AttemptWorkflowService $workflowService): JsonResponse
     {
         $this->authorizeAccess($attempt);
 
@@ -79,7 +188,7 @@ class SimulationController extends Controller
     /**
      * Reset attempt state safely.
      */
-    public function reset(Attempt $attempt, \App\Services\Simulation\AttemptWorkflowService $workflowService): RedirectResponse
+    public function reset(Attempt $attempt, AttemptWorkflowService $workflowService): RedirectResponse
     {
         $this->authorizeAccess($attempt);
 
@@ -114,7 +223,7 @@ class SimulationController extends Controller
         Request $request,
         Attempt $attempt,
         ScoringEngineService $scoringService,
-        \App\Services\Simulation\AttemptWorkflowService $workflowService
+        AttemptWorkflowService $workflowService
     ): RedirectResponse {
         $this->authorizeAccess($attempt);
 

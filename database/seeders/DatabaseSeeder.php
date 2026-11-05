@@ -4,12 +4,14 @@ namespace Database\Seeders;
 
 use App\Enums\LabStatus;
 use App\Enums\UserRole;
+use App\Models\AcademicSession;
 use App\Models\Badge;
 use App\Models\Cohort;
 use App\Models\Course;
 use App\Models\Laboratory;
 use App\Models\Lesson;
 use App\Models\Module;
+use App\Models\Programme;
 use App\Models\Question;
 use App\Models\Scenario;
 use App\Models\User;
@@ -91,7 +93,7 @@ class DatabaseSeeder extends Seeder
         );
 
         // 3. Academic Session & Programmes
-        $session = \App\Models\AcademicSession::updateOrCreate(
+        $session = AcademicSession::updateOrCreate(
             ['code' => 'AY-2026-27'],
             [
                 'name' => '2026/2027 Academic Year (Cohort Alpha & Beta)',
@@ -102,7 +104,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        $programme = \App\Models\Programme::updateOrCreate(
+        $programme = Programme::updateOrCreate(
             ['code' => 'DCD-2026'],
             [
                 'title' => 'Diploma in Cyber Defense & SOC Operations',
@@ -191,9 +193,9 @@ class DatabaseSeeder extends Seeder
 
         foreach ($labsData as $index => $item) {
             $lesson = Lesson::updateOrCreate(
-                ['module_id' => $item['module_id'] == 1 ? $mod1->id : ($item['module_id'] == 2 ? $mod2->id : ($item['module_id'] == 3 ? $mod3->id : $mod4->id)), 'slug' => 'lesson-' . ($index + 1)],
+                ['module_id' => $item['module_id'] == 1 ? $mod1->id : ($item['module_id'] == 2 ? $mod2->id : ($item['module_id'] == 3 ? $mod3->id : $mod4->id)), 'slug' => 'lesson-'.($index + 1)],
                 [
-                    'title' => 'Lesson ' . ($index + 1) . ': ' . $item['title'],
+                    'title' => 'Lesson '.($index + 1).': '.$item['title'],
                     'order' => $index + 1,
                     'content' => $item['theory_notes'] ?? null,
                 ]
@@ -237,7 +239,7 @@ class DatabaseSeeder extends Seeder
             Scenario::updateOrCreate(
                 ['laboratory_id' => $lab->id],
                 [
-                    'title' => $lab->title . ' Scenario',
+                    'title' => $lab->title.' Scenario',
                     'initial_state' => ['status' => 'initialized'],
                     'network_topology' => $item['network_topology'] ?? null,
                     'allowed_commands' => $item['allowed_commands'] ?? [],
@@ -258,6 +260,9 @@ class DatabaseSeeder extends Seeder
                 );
             }
         }
+
+        // 6. Seed Naval Provost Basic Cybersecurity & AI Programme and 8 Specialized Labs
+        $this->call(NavalProvostAiProgrammeSeeder::class);
     }
 
     protected function getLabsData(): array
@@ -691,13 +696,13 @@ class DatabaseSeeder extends Seeder
                 'allowed_commands' => [
                     'ls -la' => "-rw-r--r-- 1 analyst analyst 1048576 Oct 11 10:15 updater.bin\n-rw-r--r-- 1 analyst analyst   65536 Oct 11 10:15 docs.pdf\n-rw-r--r-- 1 analyst analyst    4096 Oct 11 10:15 agent.conf\n-rw-r--r-- 1 analyst analyst     256 Oct 11 10:15 SHA256SUMS",
                     'cat SHA256SUMS' => "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  updater.bin\n2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae  docs.pdf\nfcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9  agent.conf",
-                    'sha256sum updater.bin' => "8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4  updater.bin",
-                    'sha256sum docs.pdf' => "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae  docs.pdf",
-                    'sha256sum agent.conf' => "fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9  agent.conf",
+                    'sha256sum updater.bin' => '8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4  updater.bin',
+                    'sha256sum docs.pdf' => '2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae  docs.pdf',
+                    'sha256sum agent.conf' => 'fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9  agent.conf',
                     'sha256sum *' => "8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4  updater.bin\n2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae  docs.pdf\nfcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9  agent.conf\n9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08  SHA256SUMS",
-                    'file updater.bin' => "updater.bin: ELF 64-bit LSB executable, x86-64, dynamically linked",
-                    'file docs.pdf' => "docs.pdf: PDF document, version 1.7",
-                    'file agent.conf' => "agent.conf: ASCII text",
+                    'file updater.bin' => 'updater.bin: ELF 64-bit LSB executable, x86-64, dynamically linked',
+                    'file docs.pdf' => 'docs.pdf: PDF document, version 1.7',
+                    'file agent.conf' => 'agent.conf: ASCII text',
                 ],
                 'questions' => [
                     [
@@ -748,19 +753,19 @@ class DatabaseSeeder extends Seeder
                 'expected_findings' => 'Configuration file `audit_workspace/flag.txt` discovered containing FLAG{KALI_NAV_SUCCESS} and failed logins originating from 192.168.50.105.',
                 'remediation_explanation' => 'File permission audits prevent unauthorized local privilege escalation.',
                 'allowed_commands' => [
-                    'ls' => "Documents  Downloads  audit_workspace  scripts",
+                    'ls' => 'Documents  Downloads  audit_workspace  scripts',
                     'ls -la' => "drwxr-xr-x 4 analyst analyst 4096 Oct 11 09:00 .\ndrwxr-xr-x 3 root    root    4096 Oct 11 08:30 ..\ndrwxr-xr-x 2 analyst analyst 4096 Oct 11 09:15 audit_workspace\n-rw-r--r-- 1 analyst analyst  220 Oct 11 08:30 .bash_logout",
-                    'pwd' => "/home/analyst",
-                    'cd audit_workspace' => "",
-                    'ls audit_workspace' => "flag.txt  notes.md",
-                    'cat audit_workspace/flag.txt' => "FLAG{KALI_NAV_SUCCESS}",
-                    'cat flag.txt' => "FLAG{KALI_NAV_SUCCESS}",
+                    'pwd' => '/home/analyst',
+                    'cd audit_workspace' => '',
+                    'ls audit_workspace' => 'flag.txt  notes.md',
+                    'cat audit_workspace/flag.txt' => 'FLAG{KALI_NAV_SUCCESS}',
+                    'cat flag.txt' => 'FLAG{KALI_NAV_SUCCESS}',
                     'grep failed /var/log/auth.log' => "Oct 11 09:14:02 kali sshd[412]: Failed password for invalid user admin from 192.168.50.105 port 49152 ssh2\nOct 11 09:14:05 kali sshd[415]: Failed password for invalid user root from 192.168.50.105 port 49154 ssh2",
                     'grep -i "failed" /var/log/auth.log' => "Oct 11 09:14:02 kali sshd[412]: Failed password for invalid user admin from 192.168.50.105 port 49152 ssh2\nOct 11 09:14:05 kali sshd[415]: Failed password for invalid user root from 192.168.50.105 port 49154 ssh2",
-                    'sha256sum audit_workspace/flag.txt' => "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945  audit_workspace/flag.txt",
-                    'sha256sum flag.txt' => "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945  flag.txt",
-                    'file audit_workspace/flag.txt' => "audit_workspace/flag.txt: ASCII text",
-                    'file flag.txt' => "flag.txt: ASCII text",
+                    'sha256sum audit_workspace/flag.txt' => '4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945  audit_workspace/flag.txt',
+                    'sha256sum flag.txt' => '4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945  flag.txt',
+                    'file audit_workspace/flag.txt' => 'audit_workspace/flag.txt: ASCII text',
+                    'file flag.txt' => 'flag.txt: ASCII text',
                 ],
                 'questions' => [
                     [

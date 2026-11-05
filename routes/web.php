@@ -79,6 +79,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/programmes', [ProgrammeController::class, 'index'])->name('admin.programmes.index');
     Route::post('/admin/programmes', [ProgrammeController::class, 'store'])->name('admin.programmes.store');
     Route::put('/admin/programmes/{programme}', [ProgrammeController::class, 'update'])->name('admin.programmes.update');
+    Route::post('/admin/programmes/{programme}/assign-users', [ProgrammeController::class, 'assignUsers'])->name('admin.programmes.assign-users');
+    Route::delete('/admin/programmes/{programme}/users/{user}', [ProgrammeController::class, 'removeUser'])->name('admin.programmes.remove-user');
 
     // Cohort & Enrollment Management
     Route::get('/cohorts', [CohortController::class, 'index'])->name('cohorts.index');
@@ -87,6 +89,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/cohorts/{cohort}/enroll', [CohortController::class, 'enroll'])->name('cohorts.enroll');
 
     // Simulation Lab Arena
+    Route::get('/labs', [SimulationController::class, 'index'])->name('labs.index');
     Route::get('/labs/{laboratory:slug}', [SimulationController::class, 'show'])->name('simulation.show');
     Route::post('/attempts/{attempt}/command', [SimulationController::class, 'executeCommand'])
         ->middleware('throttle:60,1')

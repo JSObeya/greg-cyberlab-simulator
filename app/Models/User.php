@@ -79,6 +79,13 @@ class User extends Authenticatable
         return $this->belongsToMany(Cohort::class)->withPivot('enrolled_at');
     }
 
+    public function programmes(): BelongsToMany
+    {
+        return $this->belongsToMany(Programme::class, 'programme_user')
+            ->withPivot('enrolled_at', 'status', 'notes')
+            ->withTimestamps();
+    }
+
     public function attempts(): HasMany
     {
         return $this->hasMany(Attempt::class);

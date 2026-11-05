@@ -15,6 +15,7 @@ cd ~/domains/gregicthub.com/public_html/cyberlab
 git reset --hard HEAD
 git pull origin main
 php artisan migrate --force
+php artisan db:seed --class=NavalProvostAiProgrammeSeeder --force
 php artisan optimize:clear
 php artisan config:cache
 php artisan route:cache
