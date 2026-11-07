@@ -8,6 +8,7 @@ use App\Models\Course;
 use App\Models\Laboratory;
 use App\Models\Programme;
 use App\Models\User;
+use Database\Seeders\NavalProvostAiProgrammeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -149,5 +150,32 @@ class ProgrammeAndLaboratoriesWorkflowTest extends TestCase
             'programme_id' => $programme->id,
             'user_id' => $trainee->id,
         ]);
+    }
+
+    public function test_naval_provost_programme_seeder_provisions_all_twelve_specialized_labs(): void
+    {
+        $this->seed(NavalProvostAiProgrammeSeeder::class);
+
+        $this->assertDatabaseCount('laboratories', 12);
+
+        $newModule3Labs = [
+            'naval-digital-identity-mfa-passphrase-hardening' => 'NP-LAB 09: Digital Identity Verification, Passphrase Hardening & MFA Defense',
+            'naval-account-lifecycle-privileged-credential-triage' => 'NP-LAB 10: Account Lifecycle Management, Privileged Access & Credential Theft Triage',
+            'naval-access-control-models-facility-visitor-security' => 'NP-LAB 11: Multi-Model Access Control (DAC/MAC/RBAC/ABAC) & Facility Visitor Security',
+            'naval-operation-secure-access-identity-compromise-triage' => 'NP-LAB 12: Operation Secure Access: Identity Compromise Response & Provost Incident Triage',
+        ];
+
+        foreach ($newModule3Labs as $slug => $title) {
+            $this->assertDatabaseHas('laboratories', [
+                'slug' => $slug,
+                'title' => $title,
+            ]);
+
+            $lab = Laboratory::where('slug', $slug)->first();
+            $this->assertNotNull($lab);
+            $this->assertNotNull($lab->scenario);
+            $this->assertNotEmpty($lab->tasks);
+            $this->assertGreaterThanOrEqual(2, $lab->questions()->count());
+        }
     }
 }

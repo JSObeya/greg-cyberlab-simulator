@@ -109,7 +109,7 @@ class NavalProvostAiProgrammeSeeder extends Seeder
                 'title' => 'Basic Cybersecurity and Artificial Intelligence for Security Personnel',
                 'slug' => 'basic-cybersecurity-and-artificial-intelligence-for-security-personnel',
                 'department' => 'Naval Provost & Military Intelligence Operations',
-                'duration' => '6 Weeks (Intensive Tactical Defense)',
+                'duration' => '3 Weeks (Intensive)',
                 'delivery_mode' => 'hybrid',
                 'coordinator_id' => $coordinator->id,
                 'entry_requirements' => 'Naval Provost personnel, military law enforcement officers, or designated defense intelligence operatives with basic digital literacy.',
@@ -215,7 +215,7 @@ class NavalProvostAiProgrammeSeeder extends Seeder
             ['title' => 'Module 4: Artificial Intelligence Threats & Automated Triage', 'order' => 4]
         );
 
-        // 7. Seed 8 Specialized Tactical Laboratories
+        // 7. Seed 12 Specialized Tactical Laboratories
         $labs = $this->getNavalLabsData();
 
         foreach ($labs as $index => $item) {
@@ -724,6 +724,223 @@ class NavalProvostAiProgrammeSeeder extends Seeder
                             ['label' => 'It guarantees that no military passwords ever need to be changed', 'is_correct' => false],
                         ],
                         'correct_answer_explanation' => 'AI excels at analyzing massive data streams rapidly, alerting personnel to subtle statistical outliers and coordinated distributed attacks.',
+                    ],
+                ],
+            ],
+
+            // Lab 9: Digital Identity Verification, Passphrase Hardening & MFA Defense
+            [
+                'module_number' => 3,
+                'slug' => 'naval-digital-identity-mfa-passphrase-hardening',
+                'title' => 'NP-LAB 09: Digital Identity Verification, Passphrase Hardening & MFA Defense',
+                'category' => 'identity_access',
+                'difficulty' => 'beginner',
+                'estimated_minutes' => 45,
+                'passing_score' => 75,
+                'primary_workspace' => 'general_workbench',
+                'scenario_background' => 'During a Naval Provost cybersecurity readiness audit across naval base administrative terminals, investigators discovered pervasive use of predictable credentials (including "naval123", "Musa2026", and "Password1"). Simultaneously, several naval ratings and duty officers reported receiving unexpected multi-factor authentication (MFA) push notifications on their military-issued mobile devices at odd hours (MFA fatigue / push-bombing attacks). Provost personnel must audit weak passwords, construct robust 4-word passphrases with high cryptographic entropy, classify authentication factors according to military taxonomy (Know, Have, Are, Context), and execute the required defensive response to unexpected MFA prompts.',
+                'theory_notes' => 'Digital identity represents an entity in cyberspace, while authentication verifies claimed identity. Authentication factors include Something You Know (knowledge), Something You Have (possession), Something You Are (biometrics), and Contextual factors (time/location). In MFA fatigue (push bombing), attackers flood targets with mobile prompts until the user mistakenly or reluctantly approves access. Standard military defense requires denying the prompt immediately and notifying the Provost Cyber Defense Watch.',
+                'vocabulary' => [
+                    ['term' => 'Digital Identity', 'definition' => 'The electronic representation and attributes of an individual or device within a military information network.'],
+                    ['term' => 'MFA Fatigue (Push Bombing)', 'definition' => 'An attack where threat actors spam target devices with repeated MFA prompts to wear down users into approving.'],
+                    ['term' => 'Cryptographic Passphrase', 'definition' => 'A sequence of four or more memorable, unrelated words providing superior entropy over short complex passwords.'],
+                    ['term' => 'Factor Taxonomy', 'definition' => 'The classification of authentication methods: Something You Know, Have, Are, and Contextual factors.'],
+                ],
+                'learning_objectives' => 'Audit weak military passwords and evaluate cracking resistance; generate high-entropy 4-word passphrases; correctly classify authentication factor taxonomies; execute defensive protocols against MFA push-bombing campaigns.',
+                'instructions' => 'Inspect the credential vulnerability list on your workbench. Identify predictable patterns in passwords such as "naval123" and "Musa2026". Construct a secure four-word military passphrase. Analyze the MFA telemetry log, reject unauthorized push notifications targeting Lieutenant Commander Aminu, and file an urgent Provost security advisory signal.',
+                'tasks' => [
+                    'Review the flagged credential audit in "/srv/audit/flagged_passwords.txt" and evaluate dictionary vulnerability.',
+                    'Construct a hardened 4-word military passphrase exceeding 16 characters with high entropy.',
+                    'Classify authentication mechanisms into Know (PIN/Passphrase), Have (CAC Smart Card/Token), Are (Fingerprint/Iris), and Context (Geofence/Duty hours).',
+                    'Inspect the MFA authorization alert log ("/var/log/mfa_prompts.log"), isolate unauthorized push prompts from foreign IP 103.22.201.44, execute denial, and file an incident signal.',
+                ],
+                'evidence_requirements' => ['Weak password audit and cracking vulnerability report', 'Constructed 4-word passphrase entropy analysis', 'Authentication factor taxonomy classification matrix', 'MFA fatigue rejection and provost alert record'],
+                'expected_findings' => 'Passwords "naval123" and "Musa2026" fail standard entropy criteria and can be cracked in under 3 seconds. Off-duty officer LCdr Aminu was targeted with 14 unsolicited push prompts in 4 minutes from external IP 103.22.201.44.',
+                'remediation_explanation' => 'Enforce mandatory 4-word passphrases (minimum 16 characters), prohibit calendar years and base names, and implement number matching in MFA authenticators to eliminate blind push approvals.',
+                'allowed_commands' => ['cat', 'grep', 'wc', 'clear', 'echo'],
+                'questions' => [
+                    [
+                        'prompt' => 'An officer receives an unexpected MFA approval notification on their smartphone at 0200 hours while off duty. What is the mandatory Naval Provost protocol?',
+                        'options' => [
+                            ['label' => 'Immediately tap "Deny" / "No, it wasn\'t me" and report the incident directly to the Provost Marshal and Cyber Defense Watch', 'is_correct' => true],
+                            ['label' => 'Tap "Approve" so the notifications stop ringing and they can return to sleep', 'is_correct' => false],
+                            ['label' => 'Ignore the notification and uninstall the military authenticator application', 'is_correct' => false],
+                            ['label' => 'Forward the notification screenshot to personal social media groups to ask peers', 'is_correct' => false],
+                        ],
+                        'correct_answer_explanation' => 'Tapping approve grants hostile adversaries instantaneous access. Immediate denial and provost reporting alerts security teams that primary credentials have already been compromised.',
+                    ],
+                    [
+                        'prompt' => 'Which authentication factor category does a Naval Common Access Card (CAC) or hardware cryptographic token belong to?',
+                        'options' => [
+                            ['label' => 'Something You Have (possession factor)', 'is_correct' => true],
+                            ['label' => 'Something You Know (knowledge factor)', 'is_correct' => false],
+                            ['label' => 'Something You Are (biometric factor)', 'is_correct' => false],
+                            ['label' => 'Somewhere You Are (contextual factor)', 'is_correct' => false],
+                        ],
+                        'correct_answer_explanation' => 'Physical tokens, smart cards, and authentication hardware keys are physical items in the user\'s possession, classifying them under "Something You Have".',
+                    ],
+                ],
+            ],
+
+            // Lab 10: Account Lifecycle Management, Privileged Access & Credential Theft Triage
+            [
+                'module_number' => 3,
+                'slug' => 'naval-account-lifecycle-privileged-credential-triage',
+                'title' => 'NP-LAB 10: Account Lifecycle Management, Privileged Access & Credential Theft Triage',
+                'category' => 'credential_protection',
+                'difficulty' => 'intermediate',
+                'estimated_minutes' => 45,
+                'passing_score' => 75,
+                'primary_workspace' => 'kali_terminal',
+                'scenario_background' => 'Following a routine quarterly personnel rotation at Western Naval Command, the Provost Cyber Inspection Team conducts an Account Lifecycle audit on the base command server. Preliminary discovery shows that transferred officers still retain active root and sudo permissions on legacy servers. Furthermore, a suspicious telephone caller impersonating "Navy Headquarters ICT Directorate" attempted to extract OTP tokens from watch ratings. Meanwhile, server authentication logs display an automated horizontal password spraying attack attempting a single common password ("NavyMarch2026!") across 200 distinct user accounts to evade lockout thresholds.',
+                'theory_notes' => 'The Account Lifecycle comprises Creation, Provisioning, Maintenance/Review, and Deprovisioning. Stale or orphaned accounts from redeployed personnel are prime vectors for persistent unauthorized access. Privileged Accounts (sudo/root) demand stringent monitoring and must never be shared among watchstanders, as shared accounts destroy individual accountability and forensic non-repudiation.',
+                'vocabulary' => [
+                    ['term' => 'Account Deprovisioning', 'definition' => 'The prompt revocation of access privileges and disabling of user accounts when personnel transfer or discharge.'],
+                    ['term' => 'Privileged Account', 'definition' => 'An account holding administrative rights capable of modifying security settings, users, or critical databases.'],
+                    ['term' => 'Shared Account Hazard', 'definition' => 'The critical vulnerability where multiple operators share one credential, destroying non-repudiation and individual accountability.'],
+                    ['term' => 'Password Spraying', 'definition' => 'A horizontal attack attempting a single likely password across numerous accounts to circumvent account lockout policies.'],
+                ],
+                'learning_objectives' => 'Audit user accounts against personnel posting manifests to detect orphaned accounts; eliminate shared generic administrative accounts to preserve non-repudiation; detect horizontal password spraying patterns in auth logs; apply out-of-band verbal challenge procedures to thwart social engineering vishing.',
+                'instructions' => 'Navigate to "/etc/provost/". Inspect the system users in "/etc/passwd" and compare them against "transfer_manifest_q1.csv". Identify active accounts for transferred personnel (e.g., Commander Danjuma, transferred 45 days ago). Audit "/var/log/auth.log" for password spraying indicators, isolate the attacking IP, and document the social engineering telephone triage.',
+                'tasks' => [
+                    'Cross-reference system accounts in "/etc/passwd" against "transfer_manifest_q1.csv" to identify orphaned accounts.',
+                    'Audit the shared account "provost_shared_duty" and formulate individual named credential replacements.',
+                    'Use grep and awk to extract authentication failures in "/var/log/auth.log" matching horizontal password spraying with "NavyMarch2026!".',
+                    'Identify source IP address 185.220.101.5 and compile an emergency IP block and credential reset manifest.',
+                ],
+                'evidence_requirements' => ['Orphaned account audit and deprovisioning list', 'Horizontal password spraying forensic extraction', 'Shared administrative account remediation plan', 'Telephone social engineering (vishing) verification record'],
+                'expected_findings' => 'Transferred officer account "cdanjuma" remained active with sudo rights 45 days post-transfer. Hostile IP 185.220.101.5 sprayed "NavyMarch2026!" across 200 accounts, compromising 2 weak accounts.',
+                'remediation_explanation' => 'Establish automated HR-driven deprovisioning triggers on military transfer orders; eliminate all generic shared accounts in favor of individual named IDs; deploy rate-limiting and fail2ban rules to detect horizontal multi-account sprays.',
+                'allowed_commands' => ['cat', 'grep', 'awk', 'wc', 'ls', 'sort', 'uniq', 'clear'],
+                'questions' => [
+                    [
+                        'prompt' => 'Why is using a shared administrative account (such as "watch_desk_admin") strictly forbidden in military and provost operations?',
+                        'options' => [
+                            ['label' => 'It destroys non-repudiation and forensic accountability, making it impossible to determine which specific watchstander performed an action', 'is_correct' => true],
+                            ['label' => 'It causes the server to consume double the electrical power', 'is_correct' => false],
+                            ['label' => 'It prevents passwords from having more than six characters', 'is_correct' => false],
+                            ['label' => 'Shared accounts cannot connect to local area networks', 'is_correct' => false],
+                        ],
+                        'correct_answer_explanation' => 'In military judicial and forensic proceedings, non-repudiation requires undeniable proof of individual responsibility. Shared accounts make individual attribution legally impossible.',
+                    ],
+                    [
+                        'prompt' => 'How does a horizontal password spraying attack evade standard account lockout policies?',
+                        'options' => [
+                            ['label' => 'By testing one single common password across hundreds of different accounts, staying well beneath per-account failed login lockout limits', 'is_correct' => true],
+                            ['label' => 'By physically cutting the network fiber cables to the authentication server', 'is_correct' => false],
+                            ['label' => 'By trying ten thousand passwords on a single account within five seconds', 'is_correct' => false],
+                            ['label' => 'By sending physical letters to the naval dockyard mailroom', 'is_correct' => false],
+                        ],
+                        'correct_answer_explanation' => 'Standard lockouts trigger when one account experiences multiple failed attempts. Password spraying stays under that threshold by testing one guess per account across hundreds of users.',
+                    ],
+                ],
+            ],
+
+            // Lab 11: Multi-Model Access Control (DAC/MAC/RBAC/ABAC) & Facility Visitor Security
+            [
+                'module_number' => 3,
+                'slug' => 'naval-access-control-models-facility-visitor-security',
+                'title' => 'NP-LAB 11: Multi-Model Access Control (DAC/MAC/RBAC/ABAC) & Facility Visitor Security',
+                'category' => 'access_control',
+                'difficulty' => 'intermediate',
+                'estimated_minutes' => 45,
+                'passing_score' => 75,
+                'primary_workspace' => 'kali_terminal',
+                'scenario_background' => 'At the Naval Intelligence Operations Centre (NIOC), physical and logical access controls work in tandem. An unannounced third-party HVAC contractor arrives at the perimeter checkpoint claiming an emergency repair ticket for the secure server vault. Meanwhile, a system security audit in the terminal reveals that file access rights across four access control models (DAC, MAC, RBAC, ABAC) require immediate alignment. Specifically, classified operational intelligence folders have overly permissive Discretionary (chmod 777) settings, Role-Based Access Control rules for Provost watchstanders need hardening, and physical tailgating vulnerabilities at the server room mantrap require procedural enforcement.',
+                'theory_notes' => 'Access control models govern subject-object interactions: Discretionary Access Control (DAC) grants access based on object owner discretion (POSIX chmod/chown); Mandatory Access Control (MAC) enforces strict non-negotiable security clearance labels (e.g. SECRET); Role-Based Access Control (RBAC) assigns permissions based on defined job duties; Attribute-Based Access Control (ABAC) dynamically assesses contextual attributes (time, location, device security). Physical controls (visitor logs, mandatory 1:1 escorts, anti-tailgating mantraps) provide depth in defense.',
+                'vocabulary' => [
+                    ['term' => 'DAC (Discretionary Access Control)', 'definition' => 'Access control where the file creator/owner determines permissions and rights for others.'],
+                    ['term' => 'MAC (Mandatory Access Control)', 'definition' => 'Centrally mandated access determined by clearance level and document classification labels, not by individual users.'],
+                    ['term' => 'RBAC (Role-Based Access Control)', 'definition' => 'Access governance based on organizational role and assigned responsibilities.'],
+                    ['term' => 'ABAC (Attribute-Based Access Control)', 'definition' => 'Dynamic access evaluation using subject, object, action, and environmental attributes (e.g., duty hours, secure subnet).'],
+                    ['term' => 'Tailgating / Piggybacking', 'definition' => 'An unauthorized individual following an authorized person through a secured entry without scanning individual credentials.'],
+                ],
+                'learning_objectives' => 'Distinguish and configure DAC, MAC, RBAC, and ABAC access control policies; audit and remediate permissive Linux file permissions (chmod 640); enforce physical visitor verification and continuous escort protocols; mitigate physical tailgating risks through procedural and physical controls.',
+                'instructions' => 'Review the physical visitor entry request for the HVAC contractor on your workbench. Confirm lack of prior authorization and enforce visitor escort holding procedures. In the terminal, navigate to "/data/intel_ops/", inspect DAC permissions using "ls -la", correct world-accessible files using "chmod 640", and map the access rules into the four access control models.',
+                'tasks' => [
+                    'Evaluate the contractor visitor verification request and enforce 100% escort and out-of-band authorization checks.',
+                    'Analyze the physical server room entry log and document the tailgating violation at Door B2.',
+                    'Audit file permissions in "/data/intel_ops/" using "ls -la" and remediate dangerous 777 permissions to 640.',
+                    'Classify military security policies into DAC, MAC, RBAC, and ABAC categories in the configuration register.',
+                ],
+                'evidence_requirements' => ['Physical visitor access authorization report', 'Anti-tailgating intercept log and mantrap inspection', 'Remediated DAC file permission listing (chmod 640)', 'Four-model access control comparison register'],
+                'expected_findings' => 'Contractor lacked a valid work ticket and was attempting unescorted entry. Classified reconnaissance file "operation_sea_guard.dat" possessed world-writable 777 permissions, which were successfully remediated to 640.',
+                'remediation_explanation' => 'Enforce strict 1:1 continuous military escort for all civilian contractors in sensitive compartments; install automated interlocking mantrap doors to eliminate tailgating; apply chmod 640 and chown root:provost_intel across operational directories.',
+                'allowed_commands' => ['ls', 'chmod', 'chown', 'cat', 'grep', 'clear', 'diff'],
+                'questions' => [
+                    [
+                        'prompt' => 'Under a Mandatory Access Control (MAC) military architecture, what governs whether a naval rating can view a document labeled "SECRET"?',
+                        'options' => [
+                            ['label' => 'The rating must hold a verified SECRET clearance or higher AND an official Need-to-Know, independent of the document creator\'s wishes', 'is_correct' => true],
+                            ['label' => 'The document creator decides to share it with them in a shared folder', 'is_correct' => false],
+                            ['label' => 'The rating has served on the base for more than two consecutive years', 'is_correct' => false],
+                            ['label' => 'The document was downloaded from the public military website', 'is_correct' => false],
+                        ],
+                        'correct_answer_explanation' => 'Under MAC, system-enforced labels and security clearances determine access. The individual creator has no authority to grant access beyond clearance boundaries.',
+                    ],
+                    [
+                        'prompt' => 'What physical control mechanism is most effective in preventing an unauthorized person from tailgating an authorized officer into a secure cryptographic server room?',
+                        'options' => [
+                            ['label' => 'An access-controlled mantrap (airlock entry) or interlocking turnstile permitting only one verified person to pass at a time', 'is_correct' => true],
+                            ['label' => 'A printed warning sign pasted on the wall asking personnel to close the door gently', 'is_correct' => false],
+                            ['label' => 'Propping the door open with a wooden wedge during shift changeover', 'is_correct' => false],
+                            ['label' => 'Painting the door gray so it blends into the corridor wall', 'is_correct' => false],
+                        ],
+                        'correct_answer_explanation' => 'A mantrap with interlocking doors and presence sensors physically ensures that only one credentialed individual can enter at a time, eliminating tailgating.',
+                    ],
+                ],
+            ],
+
+            // Lab 12: Operation Secure Access: Identity Compromise Response & Provost Incident Triage
+            [
+                'module_number' => 3,
+                'slug' => 'naval-operation-secure-access-identity-compromise-triage',
+                'title' => 'NP-LAB 12: Operation Secure Access: Identity Compromise Response & Provost Incident Triage',
+                'category' => 'incident_response',
+                'difficulty' => 'intermediate',
+                'estimated_minutes' => 50,
+                'passing_score' => 75,
+                'primary_workspace' => 'general_workbench',
+                'scenario_background' => 'Operation Secure Access Tabletop Scenario: During the 0230 midnight watch, the Naval Provost Duty Operations Officer receives five simultaneous incident dispatches: Event 1 - Sub-Lieutenant Adebayo reports his military Common Access Smart ID card was lost during a transit taxi ride; Event 2 - A privileged administrator account logged in from an unknown foreign IP address (194.26.29.112) accessing the Naval Armory Database; Event 3 - Multiple duty personnel report unexpected MFA approval alerts on their phones; Event 4 - An unbadged individual in blue overalls was observed departing the server room corridor; Event 5 - A suspicious USB flash drive labeled "Naval Welfare Promotion List 2026" was found inserted into an unclassified terminal in the muster hall. Trainees must apply the 5-step military first-response sequence (Notice, Do Not Approve, Report, Recover, Document) and complete the official Naval Provost Incident Report Worksheet.',
+                'theory_notes' => 'When identity and access controls fail, the speed and rigor of the initial provost response determines whether an adversary gains full persistence. The 5-step response sequence comprises: 1) Notice anomaly, 2) Do Not Approve / Halt propagation, 3) Report through military chain of command, 4) Recover assets and revoke credentials, and 5) Document with evidentiary rigor for court-martial proceedings.',
+                'vocabulary' => [
+                    ['term' => '5-Step Response Sequence', 'definition' => 'The military standard: Notice anomaly, Do Not Approve unauthorized access, Report up chain, Recover assets, Document forensically.'],
+                    ['term' => 'Incident Report Worksheet', 'definition' => 'The standardized provost military form detailing incident timeline, affected assets, impact rating, and defensive interventions.'],
+                    ['term' => 'Session Invalidation', 'definition' => 'Immediately terminating active cryptographic tokens and TCP/SSH sessions of compromised accounts.'],
+                    ['term' => 'Tabletop Simulation', 'definition' => 'A structured, scenario-driven operational exercise to test incident readiness and chain-of-command reporting under pressure.'],
+                ],
+                'learning_objectives' => 'Prioritize concurrent high-impact security incidents under operational pressure; execute the 5-step military identity compromise response sequence; immediately revoke lost smart card credentials and terminate unauthorized administrative sessions; complete a forensically rigorous Naval Provost Incident Report Worksheet.',
+                'instructions' => 'Review the 5 tabletop incident feeds on your provost workbench. Rank the events by operational risk and containment urgency. Execute immediate credential revocation for Sub-Lieutenant Adebayo\'s lost smart card. Terminate the active unauthorized foreign admin session (194.26.29.112) on the armory database. Complete all sections of the Naval Provost Incident Report Worksheet.',
+                'tasks' => [
+                    'Triage and rank the 5 tabletop incidents based on operational risk to naval assets.',
+                    'Trigger emergency certificate revocation for Sub-Lieutenant Adebayo\'s lost Common Access Smart ID card.',
+                    'Terminate the active rogue SSH session linked to foreign IP 194.26.29.112 on the armory server.',
+                    'Complete the standardized Naval Provost Incident Report Worksheet including timeline, containment actions, and evidence preservation hashes.',
+                ],
+                'evidence_requirements' => ['Prioritized tabletop event triage matrix', 'Smart card certificate revocation dispatch', 'Rogue administrative session kill confirmation', 'Completed Naval Provost Incident Report Worksheet'],
+                'expected_findings' => 'Event 2 (rogue foreign admin session on Armory Database) and Event 1 (lost military smart ID) posed catastrophic risks requiring immediate session termination and certificate revocation. The 5-step sequence successfully halted lateral movement.',
+                'remediation_explanation' => 'Enforce immediate smart card certificate revocation via CRL/OCSP; mandate out-of-band verification on all off-hours privileged sessions; deploy provost physical security patrols to secure perimeter breaches.',
+                'allowed_commands' => ['cat', 'grep', 'kill', 'ps', 'pkill', 'clear', 'echo'],
+                'questions' => [
+                    [
+                        'prompt' => 'What is the immediate, non-negotiable first action a naval watchstander must take upon realizing their military smart ID card is missing or stolen?',
+                        'options' => [
+                            ['label' => 'Immediately report the loss to the Provost Duty Officer and system administrator so the cryptographic certificate can be revoked without delay', 'is_correct' => true],
+                            ['label' => 'Wait 48 hours to see if someone returns it to the mess hall', 'is_correct' => false],
+                            ['label' => 'Borrow an associate\'s smart card and continue working as normal', 'is_correct' => false],
+                            ['label' => 'Keep silent to avoid a disciplinary reprimand', 'is_correct' => false],
+                        ],
+                        'correct_answer_explanation' => 'Prompt reporting allows administrators to immediately revoke the card certificate in the directory, neutralizing its cryptographic access capability before adversaries can exploit it.',
+                    ],
+                    [
+                        'prompt' => 'According to the Naval Provost standard operating procedure, what is the correct sequence of the 5-step identity compromise response protocol?',
+                        'options' => [
+                            ['label' => 'Notice -> Do Not Approve -> Report -> Recover -> Document', 'is_correct' => true],
+                            ['label' => 'Document -> Recover -> Notice -> Report -> Do Not Approve', 'is_correct' => false],
+                            ['label' => 'Approve -> Notice -> Recover -> Delete -> Forget', 'is_correct' => false],
+                            ['label' => 'Report -> Document -> Guess -> Approve -> Notice', 'is_correct' => false],
+                        ],
+                        'correct_answer_explanation' => 'The handbook sequence is: Notice the anomaly, Do Not Approve unauthorized prompts, Report immediately up the chain of command, Recover assets/revoke credentials, and Document the complete factual record.',
                     ],
                 ],
             ],
