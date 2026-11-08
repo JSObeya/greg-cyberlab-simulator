@@ -613,3 +613,4 @@ export default function ExamAnalytics({
         </AuthenticatedLayout>
     );
 }
+

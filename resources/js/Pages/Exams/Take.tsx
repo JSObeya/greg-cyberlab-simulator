@@ -645,3 +645,4 @@ export default function ExamTake({ quiz, attempt: initialAttempt, questions }: P
         </AuthenticatedLayout>
     );
 }
+

@@ -36,18 +36,27 @@
     <!-- Top Navigation Header -->
     <header class="bg-slate-900 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between">
         <div class="flex items-center gap-3">
-            <div class="p-1.5 rounded-lg bg-cyan-950 border border-cyan-800 text-cyan-400 font-bold text-xs">
-                🍳 CYBERCHEF
+            <div class="p-1.5 rounded-lg bg-cyan-950 border border-cyan-800 text-cyan-400 font-bold text-xs flex items-center gap-1.5">
+                <span>🍳</span>
+                <span>CYBERCHEF</span>
             </div>
             <div>
-                <h1 class="text-xs font-bold tracking-wider text-slate-100 uppercase">Greg Cyberlab — Cyber Operations Swiss Army Knife</h1>
-                <p class="text-[10px] text-slate-400">Client-Side Decoder, Parser, Hasher & Triage Suite</p>
+                <h1 class="text-xs font-bold tracking-wider text-slate-100 uppercase flex items-center gap-2">
+                    Greg Cyberlab — Cyber Operations Swiss Army Knife
+                    <span class="text-[10px] px-2 py-0.2 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 font-bold">Interactive Recipe Mode</span>
+                </h1>
+                <p class="text-[10px] text-slate-400">Client-Side Decoder, Parser, Hasher & Triage Suite with Interactive Argument Boxes</p>
             </div>
         </div>
         <div class="flex items-center gap-2">
-            <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-950 border border-emerald-800 text-emerald-400 font-bold">100% Client-Side Sandboxed</span>
+            <button onclick="openLoadRecipeModal()" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition flex items-center gap-1">
+                <span>📥</span> Load / Paste Recipe
+            </button>
+            <button onclick="copyRecipeText()" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition flex items-center gap-1">
+                <span>📋</span> Copy Recipe
+            </button>
             <button onclick="clearAll()" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition">Clear All</button>
-            <button onclick="bake()" class="text-xs px-3 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition flex items-center gap-1 shadow-md shadow-cyan-950">
+            <button onclick="bake()" class="text-xs px-3.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-black transition flex items-center gap-1.5 shadow-md shadow-cyan-950">
                 <span>▶ BAKE</span>
             </button>
         </div>
@@ -63,7 +72,7 @@
                     type="text" 
                     id="opSearch" 
                     oninput="filterOperations()" 
-                    placeholder="Search operations (e.g., base64, hash, defang)..." 
+                    placeholder="Search operations (hex, base64, xor, hash, url)..." 
                     class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                 />
             </div>
@@ -80,20 +89,27 @@
         </div>
 
         <!-- Recipe Pipeline Column (Middle) -->
-        <div class="md:col-span-3 bg-slate-950/70 border-r border-slate-800 flex flex-col">
+        <div class="md:col-span-4 bg-slate-950/70 border-r border-slate-800 flex flex-col">
             <div class="p-3 border-b border-slate-800 flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <span class="text-xs font-bold text-slate-300 uppercase tracking-wider">Recipe Pipeline</span>
                     <span id="recipeCount" class="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">0 ops</span>
                 </div>
-                <button onclick="clearRecipe()" class="text-[10px] text-red-400 hover:text-red-300">Clear Recipe</button>
-            </div>
-            <div id="recipeBox" class="flex-1 overflow-y-auto p-3 space-y-2 text-xs">
-                <div id="emptyRecipePlaceholder" class="text-center py-12 text-slate-600 text-xs">
-                    <p>No operations in recipe</p>
-                    <p class="text-[10px] mt-1 text-slate-500">Double click or click '+' on any operation from the left panel to add it here.</p>
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleAllCards()" id="toggleAllBtn" class="text-[10px] text-cyan-400 hover:text-cyan-300 font-bold">Collapse All</button>
+                    <span class="text-slate-600">|</span>
+                    <button onclick="clearRecipe()" class="text-[10px] text-red-400 hover:text-red-300">Clear Recipe</button>
                 </div>
             </div>
+
+            <!-- Recipe Steps Container -->
+            <div id="recipeBox" class="flex-1 overflow-y-auto p-3 space-y-2.5 text-xs">
+                <div id="emptyRecipePlaceholder" class="text-center py-12 text-slate-600 text-xs">
+                    <p class="font-bold text-slate-500">No operations in recipe</p>
+                    <p class="text-[10px] mt-1 text-slate-600">Click '+' on any operation from the left panel or click "Load / Paste Recipe" above.</p>
+                </div>
+            </div>
+
             <!-- Auto-bake toggle -->
             <div class="p-3 border-t border-slate-800 bg-slate-900/40 flex items-center justify-between text-xs">
                 <label class="flex items-center gap-2 text-slate-400 cursor-pointer">
@@ -105,14 +121,15 @@
         </div>
 
         <!-- Input & Output Columns (Right) -->
-        <div class="md:col-span-6 flex flex-col">
+        <div class="md:col-span-5 flex flex-col">
             <!-- Input Half -->
             <div class="flex-1 flex flex-col border-b border-slate-800">
                 <div class="px-3 py-2 bg-slate-900/60 border-b border-slate-800 flex items-center justify-between text-xs">
                     <span class="font-bold text-slate-300 uppercase tracking-wider">Input</span>
                     <div class="flex items-center gap-2">
                         <span id="inputLen" class="text-[10px] text-slate-500">0 bytes</span>
-                        <button onclick="loadSample('base64')" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">Sample: B64</button>
+                        <button onclick="loadSample('base64_hex')" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">Sample: Hex+B64</button>
+                        <button onclick="loadSample('xor')" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">Sample: XOR</button>
                         <button onclick="loadSample('defang')" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">Sample: URL</button>
                         <button onclick="document.getElementById('inputArea').value=''; updateInputLen(); maybeAutoBake();" class="text-[10px] text-slate-400 hover:text-white">Clear</button>
                     </div>
@@ -135,6 +152,7 @@
                     <div class="flex items-center gap-2">
                         <span id="outputLen" class="text-[10px] text-slate-500">0 bytes</span>
                         <button onclick="copyOutput()" id="copyBtn" class="text-[10px] px-2 py-0.5 rounded bg-cyan-900/60 border border-cyan-700 text-cyan-300 hover:bg-cyan-800 transition">Copy Output</button>
+                        <button onclick="sendOutputToInput()" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">Put Output in Input</button>
                     </div>
                 </div>
                 <textarea 
@@ -148,50 +166,477 @@
 
     </div>
 
-    <!-- Minimal pure JavaScript cryptographic & transform implementations -->
+    <!-- Modal: Load / Paste Recipe -->
+    <div id="recipeModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs">
+        <div class="w-full max-w-lg bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl p-5 space-y-4">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <span>🍳</span> Load or Paste CyberChef Recipe
+                </h3>
+                <button onclick="closeLoadRecipeModal()" class="text-slate-400 hover:text-white font-bold text-sm">✕</button>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                    Recipe Syntax (e.g., From Hex('Auto') or From Base64('A-Za-z0-9+/=',true,false))
+                </label>
+                <textarea 
+                    id="recipeInputText" 
+                    rows="6" 
+                    placeholder="From Hex('Auto')&#10;From Base64('A-Za-z0-9+/=',true,false)"
+                    class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-cyan-300 font-mono placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                ></textarea>
+            </div>
+            <div class="flex items-center justify-end gap-2 pt-2">
+                <button onclick="closeLoadRecipeModal()" class="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-800">Cancel</button>
+                <button onclick="parseAndApplyRecipeText()" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white shadow-xs">Apply Recipe</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Pure JavaScript Operations Engine with Argument Boxes -->
     <script>
-        // Available Operations Registry
-        const OPERATIONS = [
-            { id: 'to_base64', name: 'To Base64', cat: 'Data Format', desc: 'Encodes raw string into RFC 4648 Base64 format.', run: (str) => btoa(unescape(encodeURIComponent(str))) },
-            { id: 'from_base64', name: 'From Base64', cat: 'Data Format', desc: 'Decodes Base64 encoded string back to plain text.', run: (str) => decodeURIComponent(escape(atob(str.trim().replace(/\s/g, '')))) },
-            { id: 'to_hex', name: 'To Hex', cat: 'Data Format', desc: 'Converts ASCII string to hexadecimal bytes.', run: (str) => Array.from(new TextEncoder().encode(str)).map(b => b.toString(16).padStart(2, '0')).join(' ') },
-            { id: 'from_hex', name: 'From Hex', cat: 'Data Format', desc: 'Decodes hexadecimal bytes to ASCII string.', run: (str) => {
-                const clean = str.replace(/[^0-9a-fA-F]/g, '');
-                let res = '';
-                for (let i = 0; i < clean.length; i += 2) {
-                    res += String.fromCharCode(parseInt(clean.substr(i, 2), 16));
+        // Available Operations Registry with Declarative Arguments
+        const OPERATIONS_CATALOG = [
+            {
+                id: 'from_hex',
+                name: 'From Hex',
+                cat: 'Data Format',
+                desc: 'Converts hexadecimal bytes back to ASCII or UTF-8 text.',
+                args: [
+                    {
+                        name: 'delimiter',
+                        label: 'Delimiter',
+                        type: 'select',
+                        value: 'Auto',
+                        options: ['Auto', 'None', 'Space', '0x', 'Comma', 'Semi-colon', 'Colon', 'Line feed']
+                    }
+                ],
+                getSignature: (args) => `('${args.delimiter}')`,
+                run: (str, args) => {
+                    const delim = args.delimiter || 'Auto';
+                    let hex = str;
+                    if (delim === 'Auto') {
+                        hex = hex.replace(/0x/gi, '').replace(/[^0-9a-fA-F]/g, '');
+                    } else if (delim === 'Space') {
+                        hex = hex.split(/\s+/).join('');
+                    } else if (delim === 'Comma') {
+                        hex = hex.split(',').join('');
+                    } else if (delim === 'Colon') {
+                        hex = hex.split(':').join('');
+                    } else if (delim === '0x') {
+                        hex = hex.replace(/0x/gi, '').replace(/\s+/g, '');
+                    } else if (delim === 'None') {
+                        hex = hex.replace(/\s+/g, '');
+                    } else {
+                        hex = hex.replace(/[^0-9a-fA-F]/g, '');
+                    }
+
+                    let res = '';
+                    for (let i = 0; i < hex.length; i += 2) {
+                        const byte = hex.substr(i, 2);
+                        if (byte.length === 2) {
+                            res += String.fromCharCode(parseInt(byte, 16));
+                        }
+                    }
+                    return res;
                 }
-                return res;
-            }},
-            { id: 'url_encode', name: 'URL Encode', cat: 'Data Format', desc: 'Encodes unsafe URI characters with percent-encoding.', run: (str) => encodeURIComponent(str) },
-            { id: 'url_decode', name: 'URL Decode', cat: 'Data Format', desc: 'Decodes percent-encoded URI strings.', run: (str) => decodeURIComponent(str) },
-            { id: 'rot13', name: 'ROT13', cat: 'Ciphers', desc: 'Rotate alphabet characters by 13 positions.', run: (str) => str.replace(/[a-zA-Z]/g, c => {
-                const base = c <= 'Z' ? 65 : 97;
-                return String.fromCharCode(base + (c.charCodeAt(0) - base + 13) % 26);
-            })},
-            { id: 'defang_url', name: 'Defang URL', cat: 'Network / Triage', desc: 'Sanitizes HTTP/HTTPS URLs (hxxp, [.] dot) for safe sharing in SOC reports.', run: (str) => str.replace(/http/gi, 'hxxp').replace(/\./g, '[.]') },
-            { id: 'refang_url', name: 'Refang URL', cat: 'Network / Triage', desc: 'Restores defanged hxxp and [.] back to actionable URLs.', run: (str) => str.replace(/hxxp/gi, 'http').replace(/\[\.\]/g, '.') },
-            { id: 'extract_ip', name: 'Extract IPv4 Addresses', cat: 'Network / Triage', desc: 'Extracts all unique IPv4 addresses found in the payload.', run: (str) => {
-                const matches = str.match(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g);
-                return matches ? Array.from(new Set(matches)).join('\n') : 'No IPv4 addresses found';
-            }},
-            { id: 'extract_urls', name: 'Extract URLs', cat: 'Network / Triage', desc: 'Extracts all HTTP/HTTPS links found in payload.', run: (str) => {
-                const matches = str.match(/https?:\/\/[^\s"'<>]+/g);
-                return matches ? Array.from(new Set(matches)).join('\n') : 'No URLs found';
-            }},
-            { id: 'sha256', name: 'SHA256 Hash', cat: 'Hashing', desc: 'Computes cryptographic SHA-256 digest.', runAsync: async (str) => {
-                const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-                return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-            }},
-            { id: 'sha1', name: 'SHA1 Hash', cat: 'Hashing', desc: 'Computes SHA-1 hash digest.', runAsync: async (str) => {
-                const buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(str));
-                return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-            }},
-            { id: 'to_upper', name: 'To Upper case', cat: 'Data Format', desc: 'Converts all characters to uppercase.', run: (str) => str.toUpperCase() },
-            { id: 'to_lower', name: 'To Lower case', cat: 'Data Format', desc: 'Converts all characters to lowercase.', run: (str) => str.toLowerCase() },
-            { id: 'reverse', name: 'Reverse', cat: 'Data Format', desc: 'Reverses character sequence.', run: (str) => str.split('').reverse().join('') }
+            },
+            {
+                id: 'to_hex',
+                name: 'To Hex',
+                cat: 'Data Format',
+                desc: 'Converts plain text characters to hexadecimal representation.',
+                args: [
+                    {
+                        name: 'delimiter',
+                        label: 'Delimiter',
+                        type: 'select',
+                        value: 'Space',
+                        options: ['Space', 'None', '0x', 'Comma', 'Colon', 'Line feed']
+                    }
+                ],
+                getSignature: (args) => `('${args.delimiter}')`,
+                run: (str, args) => {
+                    const delim = args.delimiter || 'Space';
+                    const bytes = Array.from(new TextEncoder().encode(str)).map(b => b.toString(16).padStart(2, '0'));
+                    if (delim === 'Space') return bytes.join(' ');
+                    if (delim === 'None') return bytes.join('');
+                    if (delim === '0x') return bytes.map(b => '0x' + b).join(' ');
+                    if (delim === 'Comma') return bytes.join(',');
+                    if (delim === 'Colon') return bytes.join(':');
+                    if (delim === 'Line feed') return bytes.join('\n');
+                    return bytes.join(' ');
+                }
+            },
+            {
+                id: 'from_base64',
+                name: 'From Base64',
+                cat: 'Data Format',
+                desc: 'Decodes Base64 encoded string back to plaintext.',
+                args: [
+                    {
+                        name: 'alphabet',
+                        label: 'Alphabet',
+                        type: 'select',
+                        value: 'A-Za-z0-9+/=',
+                        options: ['A-Za-z0-9+/=', 'A-Za-z0-9-_']
+                    },
+                    {
+                        name: 'removeNonAlphabet',
+                        label: 'Remove non-alphabet chars',
+                        type: 'boolean',
+                        value: true
+                    },
+                    {
+                        name: 'strictMode',
+                        label: 'Strict mode',
+                        type: 'boolean',
+                        value: false
+                    }
+                ],
+                getSignature: (args) => `('${args.alphabet}',${args.removeNonAlphabet},${args.strictMode})`,
+                run: (str, args) => {
+                    let cleaned = str;
+                    if (args.removeNonAlphabet) {
+                        cleaned = cleaned.replace(/\s+/g, '');
+                    }
+                    if (args.alphabet === 'A-Za-z0-9-_') {
+                        cleaned = cleaned.replace(/-/g, '+').replace(/_/g, '/');
+                        while (cleaned.length % 4) cleaned += '=';
+                    }
+                    try {
+                        return decodeURIComponent(escape(atob(cleaned)));
+                    } catch {
+                        return atob(cleaned);
+                    }
+                }
+            },
+            {
+                id: 'to_base64',
+                name: 'To Base64',
+                cat: 'Data Format',
+                desc: 'Encodes raw string into RFC 4648 Base64 format.',
+                args: [
+                    {
+                        name: 'alphabet',
+                        label: 'Alphabet',
+                        type: 'select',
+                        value: 'A-Za-z0-9+/=',
+                        options: ['A-Za-z0-9+/=', 'A-Za-z0-9-_']
+                    }
+                ],
+                getSignature: (args) => `('${args.alphabet}')`,
+                run: (str, args) => {
+                    let b64 = btoa(unescape(encodeURIComponent(str)));
+                    if (args.alphabet === 'A-Za-z0-9-_') {
+                        b64 = b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+                    }
+                    return b64;
+                }
+            },
+            {
+                id: 'xor',
+                name: 'XOR',
+                cat: 'Ciphers',
+                desc: 'Bitwise XOR operation against a key with multiple encoding formats.',
+                args: [
+                    {
+                        name: 'key',
+                        label: 'Key',
+                        type: 'text',
+                        value: '42'
+                    },
+                    {
+                        name: 'keyFormat',
+                        label: 'Key Format',
+                        type: 'select',
+                        value: 'Hex',
+                        options: ['Hex', 'UTF8', 'Decimal']
+                    }
+                ],
+                getSignature: (args) => `('${args.key}', '${args.keyFormat}')`,
+                run: (str, args) => {
+                    let keyBytes = [];
+                    const keyStr = args.key || '00';
+                    if (args.keyFormat === 'Hex') {
+                        const clean = keyStr.replace(/[^0-9a-fA-F]/g, '');
+                        for (let i = 0; i < clean.length; i += 2) {
+                            keyBytes.push(parseInt(clean.substr(i, 2), 16) || 0);
+                        }
+                    } else if (args.keyFormat === 'Decimal') {
+                        keyBytes = [parseInt(keyStr, 10) & 0xff];
+                    } else {
+                        keyBytes = Array.from(new TextEncoder().encode(keyStr));
+                    }
+
+                    if (keyBytes.length === 0) keyBytes = [0];
+
+                    const inputBytes = new TextEncoder().encode(str);
+                    const outputBytes = new Uint8Array(inputBytes.length);
+
+                    for (let i = 0; i < inputBytes.length; i++) {
+                        outputBytes[i] = inputBytes[i] ^ keyBytes[i % keyBytes.length];
+                    }
+
+                    return new TextDecoder('utf-8', { fatal: false }).decode(outputBytes);
+                }
+            },
+            {
+                id: 'rot13',
+                name: 'ROT13',
+                cat: 'Ciphers',
+                desc: 'Rotates alphabetic characters by N positions (default 13).',
+                args: [
+                    {
+                        name: 'amount',
+                        label: 'Amount (0-25)',
+                        type: 'number',
+                        value: 13
+                    },
+                    {
+                        name: 'lowercase',
+                        label: 'Lowercase',
+                        type: 'boolean',
+                        value: true
+                    },
+                    {
+                        name: 'uppercase',
+                        label: 'Uppercase',
+                        type: 'boolean',
+                        value: true
+                    }
+                ],
+                getSignature: (args) => `(${args.amount})`,
+                run: (str, args) => {
+                    const shift = (parseInt(args.amount) || 13) % 26;
+                    return str.replace(/[a-zA-Z]/g, c => {
+                        const isUpper = c <= 'Z';
+                        if (isUpper && !args.uppercase) return c;
+                        if (!isUpper && !args.lowercase) return c;
+                        const base = isUpper ? 65 : 97;
+                        return String.fromCharCode(base + (c.charCodeAt(0) - base + shift) % 26);
+                    });
+                }
+            },
+            {
+                id: 'url_encode',
+                name: 'URL Encode',
+                cat: 'Data Format',
+                desc: 'Encodes unsafe URI characters with percent-encoding.',
+                args: [
+                    {
+                        name: 'encodeAll',
+                        label: 'Encode All Characters',
+                        type: 'boolean',
+                        value: false
+                    }
+                ],
+                getSignature: (args) => `(${args.encodeAll})`,
+                run: (str, args) => args.encodeAll ? str.split('').map(c => '%' + c.charCodeAt(0).toString(16).toUpperCase()).join('') : encodeURIComponent(str)
+            },
+            {
+                id: 'url_decode',
+                name: 'URL Decode',
+                cat: 'Data Format',
+                desc: 'Decodes percent-encoded URI strings.',
+                args: [],
+                getSignature: () => `()`,
+                run: (str) => decodeURIComponent(str)
+            },
+            {
+                id: 'defang_url',
+                name: 'Defang URL',
+                cat: 'Network / Triage',
+                desc: 'Sanitizes HTTP/HTTPS URLs (hxxp, [.] dot) for safe sharing in SOC reports.',
+                args: [
+                    {
+                        name: 'defangHttp',
+                        label: 'Defang http -> hxxp',
+                        type: 'boolean',
+                        value: true
+                    },
+                    {
+                        name: 'defangDots',
+                        label: 'Defang dots -> [.]',
+                        type: 'boolean',
+                        value: true
+                    }
+                ],
+                getSignature: (args) => `(${args.defangHttp}, ${args.defangDots})`,
+                run: (str, args) => {
+                    let res = str;
+                    if (args.defangHttp) res = res.replace(/http/gi, 'hxxp');
+                    if (args.defangDots) res = res.replace(/\./g, '[.]');
+                    return res;
+                }
+            },
+            {
+                id: 'refang_url',
+                name: 'Refang URL',
+                cat: 'Network / Triage',
+                desc: 'Restores defanged hxxp and [.] back to actionable URLs.',
+                args: [],
+                getSignature: () => `()`,
+                run: (str) => str.replace(/hxxp/gi, 'http').replace(/\[\.\]/g, '.')
+            },
+            {
+                id: 'extract_ip',
+                name: 'Extract IPv4 Addresses',
+                cat: 'Network / Triage',
+                desc: 'Extracts all unique IPv4 addresses found in the payload.',
+                args: [
+                    {
+                        name: 'uniqueOnly',
+                        label: 'Unique Only',
+                        type: 'boolean',
+                        value: true
+                    }
+                ],
+                getSignature: (args) => `(${args.uniqueOnly})`,
+                run: (str, args) => {
+                    const matches = str.match(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g);
+                    if (!matches) return 'No IPv4 addresses found';
+                    return args.uniqueOnly ? Array.from(new Set(matches)).join('\n') : matches.join('\n');
+                }
+            },
+            {
+                id: 'extract_urls',
+                name: 'Extract URLs',
+                cat: 'Network / Triage',
+                desc: 'Extracts all HTTP/HTTPS links found in payload.',
+                args: [
+                    {
+                        name: 'uniqueOnly',
+                        label: 'Unique Only',
+                        type: 'boolean',
+                        value: true
+                    }
+                ],
+                getSignature: (args) => `(${args.uniqueOnly})`,
+                run: (str, args) => {
+                    const matches = str.match(/https?:\/\/[^\s"'<>]+/g);
+                    if (!matches) return 'No URLs found';
+                    return args.uniqueOnly ? Array.from(new Set(matches)).join('\n') : matches.join('\n');
+                }
+            },
+            {
+                id: 'sha256',
+                name: 'SHA256 Hash',
+                cat: 'Hashing',
+                desc: 'Computes cryptographic SHA-256 digest.',
+                args: [],
+                getSignature: () => `()`,
+                runAsync: async (str) => {
+                    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+                    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+                }
+            },
+            {
+                id: 'sha1',
+                name: 'SHA1 Hash',
+                cat: 'Hashing',
+                desc: 'Computes SHA-1 hash digest.',
+                args: [],
+                getSignature: () => `()`,
+                runAsync: async (str) => {
+                    const buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(str));
+                    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+                }
+            },
+            {
+                id: 'find_replace',
+                name: 'Find / Replace',
+                cat: 'Data Format',
+                desc: 'Finds strings or regex patterns and replaces them.',
+                args: [
+                    {
+                        name: 'find',
+                        label: 'Find',
+                        type: 'text',
+                        value: ''
+                    },
+                    {
+                        name: 'replace',
+                        label: 'Replace',
+                        type: 'text',
+                        value: ''
+                    },
+                    {
+                        name: 'isRegex',
+                        label: 'Regex',
+                        type: 'boolean',
+                        value: true
+                    },
+                    {
+                        name: 'global',
+                        label: 'Global',
+                        type: 'boolean',
+                        value: true
+                    }
+                ],
+                getSignature: (args) => `('${args.find}', '${args.replace}')`,
+                run: (str, args) => {
+                    if (!args.find) return str;
+                    if (args.isRegex) {
+                        const flags = args.global ? 'g' : '';
+                        const re = new RegExp(args.find, flags);
+                        return str.replace(re, args.replace || '');
+                    }
+                    return str.split(args.find).join(args.replace || '');
+                }
+            },
+            {
+                id: 'entropy',
+                name: 'Entropy',
+                cat: 'Hashing',
+                desc: 'Calculates Shannon entropy score (0 to 8 bits). >7.2 indicates encryption/compression.',
+                args: [],
+                getSignature: () => `()`,
+                run: (str) => {
+                    if (!str.length) return 'Entropy: 0.0000 bits';
+                    const freq = {};
+                    for (let i = 0; i < str.length; i++) {
+                        freq[str[i]] = (freq[str[i]] || 0) + 1;
+                    }
+                    let ent = 0;
+                    for (const char in freq) {
+                        const p = freq[char] / str.length;
+                        ent -= p * Math.log2(p);
+                    }
+                    const note = ent >= 7.2 ? ' [HIGH ENTROPY - LIKELY ENCRYPTED / COMPRESSED]' : ' [NORMAL TEXT ENTROPY]';
+                    return `Shannon Entropy: ${ent.toFixed(4)} bits per byte${note}`;
+                }
+            },
+            {
+                id: 'to_upper',
+                name: 'To Upper case',
+                cat: 'Data Format',
+                desc: 'Converts all characters to uppercase.',
+                args: [],
+                getSignature: () => `()`,
+                run: (str) => str.toUpperCase()
+            },
+            {
+                id: 'to_lower',
+                name: 'To Lower case',
+                cat: 'Data Format',
+                desc: 'Converts all characters to lowercase.',
+                args: [],
+                getSignature: () => `()`,
+                run: (str) => str.toLowerCase()
+            },
+            {
+                id: 'reverse',
+                name: 'Reverse',
+                cat: 'Data Format',
+                desc: 'Reverses character sequence.',
+                args: [],
+                getSignature: () => `()`,
+                run: (str) => str.split('').reverse().join('')
+            }
         ];
 
+        // Active Recipe Array holding instantiated operations with state
         let activeRecipe = [];
         let currentCategory = 'all';
 
@@ -201,7 +646,7 @@
             const query = document.getElementById('opSearch').value.toLowerCase();
             list.innerHTML = '';
 
-            const filtered = OPERATIONS.filter(op => {
+            const filtered = OPERATIONS_CATALOG.filter(op => {
                 const matchCat = currentCategory === 'all' || op.cat === currentCategory;
                 const matchQ = op.name.toLowerCase().includes(query) || op.desc.toLowerCase().includes(query);
                 return matchCat && matchQ;
@@ -238,8 +683,32 @@
             renderOperations();
         }
 
-        function addOperation(op) {
-            activeRecipe.push(op);
+        // Add operation into recipe pipeline
+        function addOperation(catalogOp, initialArgs = null) {
+            // Clone default arguments
+            const argsState = {};
+            (catalogOp.args || []).forEach(arg => {
+                argsState[arg.name] = (initialArgs && initialArgs[arg.name] !== undefined)
+                    ? initialArgs[arg.name]
+                    : arg.value;
+            });
+
+            const recipeItem = {
+                instanceId: 'op_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                catalogId: catalogOp.id,
+                name: catalogOp.name,
+                cat: catalogOp.cat,
+                desc: catalogOp.desc,
+                argsDef: catalogOp.args || [],
+                args: argsState,
+                isExpanded: true, // Opened by default so trainees can see & interact with options!
+                isEnabled: true,
+                getSignature: catalogOp.getSignature,
+                run: catalogOp.run,
+                runAsync: catalogOp.runAsync
+            };
+
+            activeRecipe.push(recipeItem);
             renderRecipe();
             maybeAutoBake();
         }
@@ -250,12 +719,41 @@
             maybeAutoBake();
         }
 
+        function toggleOperationExpand(index) {
+            activeRecipe[index].isExpanded = !activeRecipe[index].isExpanded;
+            renderRecipe();
+        }
+
+        function toggleOperationEnabled(index) {
+            activeRecipe[index].isEnabled = !activeRecipe[index].isEnabled;
+            renderRecipe();
+            maybeAutoBake();
+        }
+
+        function updateOpArgument(index, argName, value) {
+            activeRecipe[index].args[argName] = value;
+            // Update signature in UI
+            const sigEl = document.getElementById(`sig_${activeRecipe[index].instanceId}`);
+            if (sigEl && activeRecipe[index].getSignature) {
+                sigEl.innerText = activeRecipe[index].getSignature(activeRecipe[index].args);
+            }
+            maybeAutoBake();
+        }
+
+        function toggleAllCards() {
+            const anyOpen = activeRecipe.some(op => op.isExpanded);
+            activeRecipe.forEach(op => op.isExpanded = !anyOpen);
+            document.getElementById('toggleAllBtn').innerText = anyOpen ? 'Expand All' : 'Collapse All';
+            renderRecipe();
+        }
+
         function clearRecipe() {
             activeRecipe = [];
             renderRecipe();
             maybeAutoBake();
         }
 
+        // Render Recipe Pipeline with Interactive Configuration Boxes
         function renderRecipe() {
             const container = document.getElementById('recipeBox');
             const countEl = document.getElementById('recipeCount');
@@ -264,36 +762,151 @@
             if (activeRecipe.length === 0) {
                 container.innerHTML = `
                     <div id="emptyRecipePlaceholder" class="text-center py-12 text-slate-600 text-xs">
-                        <p>No operations in recipe</p>
-                        <p class="text-[10px] mt-1 text-slate-500">Double click or click '+' on any operation from the left panel to add it here.</p>
+                        <p class="font-bold text-slate-500">No operations in recipe</p>
+                        <p class="text-[10px] mt-1 text-slate-600">Click '+' on any operation from the left panel or click "Load / Paste Recipe" above.</p>
                     </div>
                 `;
                 return;
             }
 
             container.innerHTML = '';
-            activeRecipe.forEach((op, index) => {
-                const item = document.createElement('div');
-                item.className = 'p-2.5 rounded-lg bg-slate-900 border border-cyan-900/60 shadow-xs flex items-center justify-between text-xs';
-                item.innerHTML = `
-                    <div class="flex items-center gap-2">
-                        <span class="w-4 h-4 rounded-full bg-cyan-950 border border-cyan-700 text-cyan-400 text-[10px] flex items-center justify-center font-bold">${index + 1}</span>
-                        <span class="font-bold text-slate-200">${op.name}</span>
+            activeRecipe.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = `rounded-xl border transition-all duration-150 overflow-hidden ${
+                    !item.isEnabled
+                        ? 'opacity-50 border-slate-800 bg-slate-950/40'
+                        : item.isExpanded
+                        ? 'border-cyan-500/50 bg-slate-900 shadow-md shadow-cyan-950/20'
+                        : 'border-slate-800 bg-slate-900/80 hover:border-slate-700'
+                }`;
+
+                // Header Row
+                const header = document.createElement('div');
+                header.className = 'px-3 py-2 bg-slate-950/70 flex items-center justify-between cursor-pointer select-none border-b border-slate-800/80';
+                
+                const signatureText = item.getSignature ? item.getSignature(item.args) : '()';
+
+                header.innerHTML = `
+                    <div class="flex items-center gap-2 overflow-hidden pr-2">
+                        <button onclick="event.stopPropagation(); toggleOperationExpand(${index})" class="text-cyan-400 hover:text-cyan-300 font-bold text-[11px] w-4 text-center">
+                            ${item.isExpanded ? '▼' : '▶'}
+                        </button>
+                        <span class="w-4 h-4 rounded-full bg-cyan-950 border border-cyan-800 text-cyan-400 text-[10px] flex items-center justify-center font-bold shrink-0">
+                            ${index + 1}
+                        </span>
+                        <span class="font-bold text-slate-200 text-xs truncate">${item.name}</span>
+                        <span id="sig_${item.instanceId}" class="text-[10px] font-mono text-cyan-400/80 bg-cyan-950/50 px-1.5 py-0.2 rounded border border-cyan-900/60 truncate">
+                            ${signatureText}
+                        </span>
                     </div>
-                    <button onclick="removeOperation(${index})" class="text-slate-500 hover:text-red-400 font-bold px-1.5 py-0.5">✕</button>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <button 
+                            onclick="event.stopPropagation(); toggleOperationEnabled(${index})" 
+                            title="${item.isEnabled ? 'Disable Step (Bypass)' : 'Enable Step'}"
+                            class="px-1.5 py-0.5 rounded text-[10px] font-bold ${item.isEnabled ? 'text-emerald-400 hover:bg-emerald-950/60' : 'text-slate-500 hover:bg-slate-800'}"
+                        >
+                            ${item.isEnabled ? 'ON' : 'BYP'}
+                        </button>
+                        <button 
+                            onclick="event.stopPropagation(); removeOperation(${index})" 
+                            title="Remove Step" 
+                            class="text-slate-500 hover:text-red-400 font-bold px-1.5 py-0.5 text-xs"
+                        >
+                            ✕
+                        </button>
+                    </div>
                 `;
-                container.appendChild(item);
+                header.onclick = () => toggleOperationExpand(index);
+                card.appendChild(header);
+
+                // Configuration Box (Interactive Tray)
+                if (item.isExpanded) {
+                    const tray = document.createElement('div');
+                    tray.className = 'p-3 bg-slate-900/90 space-y-2.5 text-xs';
+
+                    if (item.argsDef.length === 0) {
+                        tray.innerHTML = `<p class="text-[10px] text-slate-500 italic">This operation requires no additional arguments.</p>`;
+                    } else {
+                        item.argsDef.forEach(arg => {
+                            const fieldWrap = document.createElement('div');
+                            fieldWrap.className = 'flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pt-1';
+
+                            const label = document.createElement('label');
+                            label.className = 'text-[11px] font-bold text-slate-400 shrink-0';
+                            label.innerText = arg.label;
+                            fieldWrap.appendChild(label);
+
+                            if (arg.type === 'select') {
+                                const select = document.createElement('select');
+                                select.className = 'bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-xs text-cyan-300 font-mono focus:outline-none focus:border-cyan-500';
+                                arg.options.forEach(opt => {
+                                    const optEl = document.createElement('option');
+                                    optEl.value = opt;
+                                    optEl.innerText = opt;
+                                    if (item.args[arg.name] === opt) optEl.selected = true;
+                                    select.appendChild(optEl);
+                                });
+                                select.onchange = (e) => updateOpArgument(index, arg.name, e.target.value);
+                                fieldWrap.appendChild(select);
+                            } else if (arg.type === 'boolean') {
+                                const checkWrap = document.createElement('label');
+                                checkWrap.className = 'inline-flex items-center gap-2 cursor-pointer';
+                                const check = document.createElement('input');
+                                check.type = 'checkbox';
+                                check.className = 'rounded bg-slate-800 border-slate-700 text-cyan-600 focus:ring-0';
+                                check.checked = !!item.args[arg.name];
+                                check.onchange = (e) => updateOpArgument(index, arg.name, e.target.checked);
+                                checkWrap.appendChild(check);
+                                const checkLabel = document.createElement('span');
+                                checkLabel.className = 'text-[11px] text-slate-300';
+                                checkLabel.innerText = item.args[arg.name] ? 'Enabled' : 'Disabled';
+                                check.onchange = (e) => {
+                                    checkLabel.innerText = e.target.checked ? 'Enabled' : 'Disabled';
+                                    updateOpArgument(index, arg.name, e.target.checked);
+                                };
+                                checkWrap.appendChild(checkLabel);
+                                fieldWrap.appendChild(checkWrap);
+                            } else if (arg.type === 'number') {
+                                const input = document.createElement('input');
+                                input.type = 'number';
+                                input.value = item.args[arg.name];
+                                input.className = 'w-24 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-xs text-cyan-300 font-mono focus:outline-none focus:border-cyan-500';
+                                input.oninput = (e) => updateOpArgument(index, arg.name, parseInt(e.target.value) || 0);
+                                fieldWrap.appendChild(input);
+                            } else {
+                                const input = document.createElement('input');
+                                input.type = 'text';
+                                input.value = item.args[arg.name];
+                                input.placeholder = arg.label;
+                                input.className = 'w-full sm:w-48 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-xs text-cyan-300 font-mono focus:outline-none focus:border-cyan-500';
+                                input.oninput = (e) => updateOpArgument(index, arg.name, e.target.value);
+                                fieldWrap.appendChild(input);
+                            }
+
+                            tray.appendChild(fieldWrap);
+                        });
+                    }
+
+                    card.appendChild(tray);
+                }
+
+                container.appendChild(card);
             });
         }
 
+        // Bake Recipe pipeline
         async function bake() {
             const input = document.getElementById('inputArea').value;
             const outputArea = document.getElementById('outputArea');
             const statusEl = document.getElementById('bakeStatus');
 
-            if (activeRecipe.length === 0) {
+            const activeOps = activeRecipe.filter(op => op.isEnabled);
+
+            if (activeOps.length === 0) {
                 outputArea.value = input;
                 updateOutputLen();
+                statusEl.innerText = 'READY';
+                statusEl.className = 'text-[10px] text-emerald-400 font-bold';
                 return;
             }
 
@@ -302,11 +915,11 @@
 
             try {
                 let current = input;
-                for (const op of activeRecipe) {
+                for (const op of activeOps) {
                     if (op.runAsync) {
-                        current = await op.runAsync(current);
+                        current = await op.runAsync(current, op.args);
                     } else if (op.run) {
-                        current = op.run(current);
+                        current = op.run(current, op.args);
                     }
                 }
                 outputArea.value = current;
@@ -351,6 +964,13 @@
             setTimeout(() => btn.innerText = old, 1500);
         }
 
+        function sendOutputToInput() {
+            const out = document.getElementById('outputArea').value;
+            document.getElementById('inputArea').value = out;
+            updateInputLen();
+            maybeAutoBake();
+        }
+
         function clearAll() {
             document.getElementById('inputArea').value = '';
             document.getElementById('outputArea').value = '';
@@ -360,15 +980,114 @@
             updateOutputLen();
         }
 
+        // Copy recipe in text syntax
+        function copyRecipeText() {
+            if (activeRecipe.length === 0) {
+                alert('No operations in recipe to copy.');
+                return;
+            }
+
+            const lines = activeRecipe.map(op => {
+                const sig = op.getSignature ? op.getSignature(op.args) : '()';
+                return `${op.name}${sig}`;
+            });
+
+            const fullText = lines.join('\n');
+            navigator.clipboard.writeText(fullText);
+            alert('Recipe copied to clipboard:\n\n' + fullText);
+        }
+
+        // Modal for loading/pasting recipe text
+        function openLoadRecipeModal() {
+            document.getElementById('recipeModal').classList.remove('hidden');
+            document.getElementById('recipeInputText').focus();
+        }
+
+        function closeLoadRecipeModal() {
+            document.getElementById('recipeModal').classList.add('hidden');
+        }
+
+        // Parse and apply recipe text lines like:
+        // From Hex('Auto')
+        // From Base64('A-Za-z0-9+/=',true,false)
+        function parseAndApplyRecipeText() {
+            const text = document.getElementById('recipeInputText').value.trim();
+            if (!text) return;
+
+            const lines = text.split('\n');
+            const newOps = [];
+
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (!trimmed) return;
+
+                // Match: OpName(args)
+                const match = trimmed.match(/^([a-zA-Z0-9_\-\s]+)\((.*)\)$/);
+                let opName = trimmed;
+                let rawArgs = '';
+
+                if (match) {
+                    opName = match[1].trim();
+                    rawArgs = match[2].trim();
+                }
+
+                // Match with catalog
+                const found = OPERATIONS_CATALOG.find(o => 
+                    o.name.toLowerCase() === opName.toLowerCase() || 
+                    o.id.toLowerCase() === opName.toLowerCase()
+                );
+
+                if (found) {
+                    const parsedArgs = {};
+                    // Parse rawArgs e.g. 'Auto' or 'A-Za-z0-9+/=', true, false
+                    if (rawArgs) {
+                        const tokens = rawArgs.split(',').map(t => {
+                            let s = t.trim();
+                            if ((s.startsWith("'") && s.endsWith("'")) || (s.startsWith('"') && s.endsWith('"'))) {
+                                return s.substring(1, s.length - 1);
+                            }
+                            if (s.toLowerCase() === 'true') return true;
+                            if (s.toLowerCase() === 'false') return false;
+                            if (!isNaN(Number(s))) return Number(s);
+                            return s;
+                        });
+
+                        (found.args || []).forEach((argDef, i) => {
+                            if (tokens[i] !== undefined) {
+                                parsedArgs[argDef.name] = tokens[i];
+                            }
+                        });
+                    }
+
+                    addOperation(found, parsedArgs);
+                }
+            });
+
+            closeLoadRecipeModal();
+            maybeAutoBake();
+        }
+
         function loadSample(type) {
-            if (type === 'base64') {
-                document.getElementById('inputArea').value = 'R1JFRyAmIENPLiBJQ1QgQUNBREVNWSBNQUtVUkRJIC0gQ1lCRVJMQUIgU0lNVUxBVE9S';
-                activeRecipe = [OPERATIONS.find(o => o.id === 'from_base64')];
+            if (type === 'base64_hex') {
+                document.getElementById('inputArea').value = '4e6d463259577774596d467a5a54303d';
+                activeRecipe = [];
+                const hexOp = OPERATIONS_CATALOG.find(o => o.id === 'from_hex');
+                const b64Op = OPERATIONS_CATALOG.find(o => o.id === 'from_base64');
+                addOperation(hexOp, { delimiter: 'Auto' });
+                addOperation(b64Op, { alphabet: 'A-Za-z0-9+/=', removeNonAlphabet: true, strictMode: false });
+            } else if (type === 'xor') {
+                document.getElementById('inputArea').value = 'Top Secret Naval Movement Order: Sector Bravo';
+                activeRecipe = [];
+                const xorOp = OPERATIONS_CATALOG.find(o => o.id === 'xor');
+                const hexOp = OPERATIONS_CATALOG.find(o => o.id === 'to_hex');
+                addOperation(xorOp, { key: '42', keyFormat: 'Hex' });
+                addOperation(hexOp, { delimiter: 'Space' });
             } else if (type === 'defang') {
                 document.getElementById('inputArea').value = 'http://malicious-command-c2.net:8080/payload.exe?agent=192.168.1.55';
-                activeRecipe = [OPERATIONS.find(o => o.id === 'defang_url')];
+                activeRecipe = [];
+                const defangOp = OPERATIONS_CATALOG.find(o => o.id === 'defang_url');
+                addOperation(defangOp, { defangHttp: true, defangDots: true });
             }
-            renderRecipe();
             updateInputLen();
             bake();
         }
