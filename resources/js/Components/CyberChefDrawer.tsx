@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     Wrench,
     Play,
@@ -36,7 +36,7 @@ interface ArgDefinition {
 interface CatalogOperation {
     id: string;
     name: string;
-    cat: 'encoding' | 'hashing' | 'triage' | 'ciphers';
+    cat: 'encoding' | 'hashing' | 'triage' | 'ciphers' | 'forensics';
     desc: string;
     args: ArgDefinition[];
     getSignature: (args: Record<string, any>) => string;
@@ -59,13 +59,207 @@ interface RecipeItemInstance {
     runAsync?: (input: string, args: Record<string, any>) => Promise<string>;
 }
 
+function parseAndFormatExif(input: string, args: Record<string, any> = {}): string {
+    let u8: Uint8Array | null = null;
+    if (typeof input === 'string') {
+        const trimmed = input.trim();
+        if (trimmed.startsWith('data:')) {
+            const b64 = trimmed.split(',')[1] || '';
+            const bin = atob(b64);
+            u8 = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+        } else if (/^[0-9a-fA-F\s]{50,}$/.test(trimmed)) {
+            const clean = trimmed.replace(/\s+/g, '');
+            const matches = clean.match(/.{1,2}/g) || [];
+            u8 = new Uint8Array(matches.map(b => parseInt(b, 16)));
+        } else if (/^[A-Za-z0-9+/=]{100,}$/.test(trimmed.replace(/\s+/g, ''))) {
+            try {
+                const bin = atob(trimmed.replace(/\s+/g, ''));
+                u8 = new Uint8Array(bin.length);
+                for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+            } catch {
+                u8 = null;
+            }
+        }
+        
+        if (!u8) {
+            u8 = new Uint8Array(input.length);
+            for (let i = 0; i < input.length; i++) u8[i] = input.charCodeAt(i) & 0xFF;
+        }
+    }
+
+    if (!u8 || u8.length < 16) {
+        return '[-] Input data is empty or too short for JPEG EXIF analysis.';
+    }
+
+    if (u8[0] !== 0xFF || u8[1] !== 0xD8) {
+        return '[-] Not a valid JPEG stream (SOI marker 0xFFD8 not found at offset 0). Ensure input is a raw, hex, or base64-encoded JPEG image.';
+    }
+
+    let app1Offset = -1;
+    for (let i = 0; i < Math.min(u8.length - 10, 65536); i++) {
+        if (u8[i] === 0xFF && u8[i+1] === 0xE1) {
+            if (u8[i+4] === 0x45 && u8[i+5] === 0x78 && u8[i+6] === 0x69 && u8[i+7] === 0x66 && u8[i+8] === 0x00 && u8[i+9] === 0x00) {
+                app1Offset = i + 10;
+                break;
+            }
+        }
+    }
+
+    if (app1Offset === -1) {
+        return [
+            '============================================================',
+            '           EXIF METADATA EXTRACTION & OPSEC AUDIT           ',
+            '============================================================',
+            '[STATUS]          NO EXIF APP1 METADATA FOUND',
+            '[CLASSIFICATION]  SANITIZED / CONTROL BASELINE',
+            '------------------------------------------------------------',
+            'Notice: No exchangeable image file format (EXIF) header detected.',
+            'This image has been scrubbed or stripped of camera and GPS markers.',
+            'OPSEC Assessment: PASS (Zero operational metadata leakage detected).'
+        ].join('\n');
+    }
+
+    const tiffStart = app1Offset;
+    const isLE = (u8[tiffStart] === 0x49 && u8[tiffStart+1] === 0x49);
+    const view = new DataView(u8.buffer, u8.byteOffset + tiffStart);
+
+    function read16(off: number) { return off + 2 <= view.byteLength ? view.getUint16(off, isLE) : 0; }
+    function read32(off: number) { return off + 4 <= view.byteLength ? view.getUint32(off, isLE) : 0; }
+
+    function readValue(off: number, type: number, count: number): any {
+        if (type === 2) {
+            let str = '';
+            const valOff = count <= 4 ? off : read32(off);
+            for (let j = 0; j < count; j++) {
+                if (valOff + j >= view.byteLength) break;
+                const code = view.getUint8(valOff + j);
+                if (code === 0) break;
+                str += String.fromCharCode(code);
+            }
+            return str.trim();
+        } else if (type === 3) {
+            return read16(off);
+        } else if (type === 4) {
+            return read32(off);
+        } else if (type === 5) {
+            const valOff = read32(off);
+            if (count === 1) {
+                const num = read32(valOff);
+                const den = read32(valOff + 4);
+                return den === 0 ? 0 : num / den;
+            } else {
+                const rats: number[] = [];
+                for (let k = 0; k < count; k++) {
+                    const num = read32(valOff + k * 8);
+                    const den = read32(valOff + k * 8 + 4);
+                    rats.push(den === 0 ? 0 : num / den);
+                }
+                return rats;
+            }
+        }
+        return read32(off);
+    }
+
+    function readIFD(ifdOffset: number): Record<number, any> {
+        const tags: Record<number, any> = {};
+        if (ifdOffset >= view.byteLength - 2) return tags;
+        const numEntries = read16(ifdOffset);
+        let cur = ifdOffset + 2;
+        for (let i = 0; i < numEntries; i++) {
+            if (cur + 12 > view.byteLength) break;
+            const tag = read16(cur);
+            const type = read16(cur + 2);
+            const count = read32(cur + 4);
+            tags[tag] = readValue(cur + 8, type, count);
+            cur += 12;
+        }
+        return tags;
+    }
+
+    const ifd0Offset = read32(4);
+    const ifd0 = readIFD(ifd0Offset);
+    const exifSub = ifd0[0x8769] ? readIFD(ifd0[0x8769]) : {};
+    const gpsSub = ifd0[0x8825] ? readIFD(ifd0[0x8825]) : {};
+
+    const lines = [
+        '============================================================',
+        '           EXIF METADATA EXTRACTION & OPSEC AUDIT           ',
+        '============================================================'
+    ];
+
+    if (!args.showGpsOnly) {
+        lines.push('[HARDWARE & CAPTURE DEVICE]');
+        lines.push(`  Make:              ${ifd0[0x010f] || 'N/A'}`);
+        lines.push(`  Model:             ${ifd0[0x0110] || 'N/A'}`);
+        lines.push(`  Software / OS:     ${ifd0[0x0131] || 'N/A'}`);
+        if (exifSub[0xa434]) lines.push(`  Lens Model:        ${exifSub[0xa434]}`);
+        lines.push('');
+        lines.push('[TEMPORAL METADATA]');
+        lines.push(`  File Date/Time:    ${ifd0[0x0132] || 'N/A'}`);
+        lines.push(`  Original Capture:  ${exifSub[0x9003] || ifd0[0x0132] || 'N/A'}`);
+        lines.push('');
+        lines.push('[ADMINISTRATIVE / IDENTITY]');
+        if (ifd0[0x013b]) lines.push(`  Artist / Operator: ${ifd0[0x013b]}`);
+        if (ifd0[0x8298]) lines.push(`  Copyright:         ${ifd0[0x8298]}`);
+        if (ifd0[0x010e]) lines.push(`  Description:       ${ifd0[0x010e]}`);
+        lines.push('');
+    }
+
+    const hasGps = gpsSub[1] && gpsSub[2] && gpsSub[3] && gpsSub[4];
+    lines.push('[GEOLOCATION (GPS) METADATA]');
+    if (hasGps) {
+        const latRef = gpsSub[1];
+        const latParts = Array.isArray(gpsSub[2]) ? gpsSub[2] : [0,0,0];
+        const lonRef = gpsSub[3];
+        const lonParts = Array.isArray(gpsSub[4]) ? gpsSub[4] : [0,0,0];
+
+        let latDec = latParts[0] + (latParts[1] / 60) + (latParts[2] / 3600);
+        if (latRef === 'S') latDec = -latDec;
+
+        let lonDec = lonParts[0] + (lonParts[1] / 60) + (lonParts[2] / 3600);
+        if (lonRef === 'W') lonDec = -lonDec;
+
+        lines.push(`  Latitude:          ${latParts[0]}° ${latParts[1]}' ${latParts[2]}" ${latRef} (${latDec.toFixed(6)}°)`);
+        lines.push(`  Longitude:         ${lonParts[0]}° ${lonParts[1]}' ${lonParts[2]}" ${lonRef} (${lonDec.toFixed(6)}°)`);
+        if (gpsSub[6]) lines.push(`  Altitude:          ${gpsSub[6]} meters`);
+        if (gpsSub[29]) lines.push(`  GPS Date:          ${gpsSub[29]}`);
+
+        if (args.generateMapUrl !== false) {
+            lines.push(`  Google Maps:       https://www.google.com/maps?q=${latDec.toFixed(6)},${lonDec.toFixed(6)}`);
+            lines.push(`  OpenStreetMap:     https://www.openstreetmap.org/?mlat=${latDec.toFixed(6)}&mlon=${lonDec.toFixed(6)}#map=16/${latDec.toFixed(6)}/${lonDec.toFixed(6)}`);
+        }
+    } else {
+        lines.push('  GPS Coordinates:   None (No geolocation coordinates recorded in EXIF)');
+    }
+
+    if (args.opsecAuditMode !== false) {
+        lines.push('');
+        lines.push('------------------------------------------------------------');
+        lines.push('[MILITARY OPSEC VULNERABILITY ASSESSMENT]');
+        if (hasGps) {
+            lines.push('  [CRITICAL VULNERABILITY]: EXIF Geolocation coordinates present!');
+            lines.push('  Threat: Adversary signals and imagery intelligence (IMINT/GEOINT)');
+            lines.push('  can pin-point naval unit base coordinates, forward observation posts,');
+            lines.push('  or patrol headquarters. Scrub metadata prior to transmission.');
+        } else if (ifd0[0x013b] || ifd0[0x010e]) {
+            lines.push('  [MEDIUM VULNERABILITY]: Administrative or personnel identifiers leaked.');
+            lines.push('  Threat: Unit personnel roster or office description exposed in header.');
+        } else {
+            lines.push('  [SECURE]: No geolocation coordinates or personnel identifiers detected.');
+        }
+    }
+
+    return lines.join('\n');
+}
+
 export default function CyberChefDrawer({ isOpen, onClose, initialInput = '' }: CyberChefDrawerProps) {
     const [input, setInput] = useState(initialInput);
     const [output, setOutput] = useState('');
     const [activeRecipe, setActiveRecipe] = useState<RecipeItemInstance[]>([]);
     const [copied, setCopied] = useState(false);
     const [recipeCopied, setRecipeCopied] = useState(false);
-    const [activeCategory, setActiveCategory] = useState<'all' | 'encoding' | 'hashing' | 'triage' | 'ciphers'>('all');
+    const [activeCategory, setActiveCategory] = useState<'all' | 'encoding' | 'hashing' | 'triage' | 'ciphers' | 'forensics'>('all');
     const [isLoadModalOpen, setIsLoadModalOpen] = useState(false);
     const [recipeTextInput, setRecipeTextInput] = useState('');
 
@@ -423,6 +617,34 @@ export default function CyberChefDrawer({ isOpen, onClose, initialInput = '' }: 
                 const note = ent >= 7.2 ? ' [HIGH ENTROPY - ENCRYPTED/COMPRESSED]' : ' [NORMAL TEXT ENTROPY]';
                 return `Shannon Entropy: ${ent.toFixed(4)} bits per byte${note}`;
             }
+        },
+        {
+            id: 'extract_exif',
+            name: 'Extract EXIF',
+            cat: 'forensics',
+            desc: 'Extracts EXIF metadata, camera device info, timestamps, GPS coordinates, and OPSEC leak risks from JPEG images',
+            args: [
+                {
+                    name: 'showGpsOnly',
+                    label: 'Only GPS & Coordinates',
+                    type: 'boolean',
+                    value: false
+                },
+                {
+                    name: 'generateMapUrl',
+                    label: 'Generate Map URL',
+                    type: 'boolean',
+                    value: true
+                },
+                {
+                    name: 'opsecAuditMode',
+                    label: 'OPSEC Military Risk Audit',
+                    type: 'boolean',
+                    value: true
+                }
+            ],
+            getSignature: (args) => `(${args.showGpsOnly ? 'true' : 'false'},${args.generateMapUrl !== false ? 'true' : 'false'},${args.opsecAuditMode !== false ? 'true' : 'false'})`,
+            run: (str, args) => parseAndFormatExif(str, args)
         }
     ];
 
@@ -513,6 +735,87 @@ export default function CyberChefDrawer({ isOpen, onClose, initialInput = '' }: 
     const handleInputChange = (val: string) => {
         setInput(val);
         bakeRecipe(val, activeRecipe);
+    };
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const dataUrl = ev.target?.result as string;
+            setInput(dataUrl);
+            let nextRecipe = [...activeRecipe];
+            if (!nextRecipe.some(op => op.catalogId === 'extract_exif')) {
+                const exifOp = operationsCatalog.find(o => o.id === 'extract_exif');
+                if (exifOp) {
+                    const newInst: RecipeItemInstance = {
+                        instanceId: 'op_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                        catalogId: exifOp.id,
+                        name: exifOp.name,
+                        cat: exifOp.cat,
+                        desc: exifOp.desc,
+                        argsDef: exifOp.args || [],
+                        args: { showGpsOnly: false, generateMapUrl: true, opsecAuditMode: true },
+                        isExpanded: true,
+                        isEnabled: true,
+                        getSignature: exifOp.getSignature,
+                        run: exifOp.run,
+                        runAsync: exifOp.runAsync
+                    };
+                    nextRecipe = [...nextRecipe, newInst];
+                    setActiveRecipe(nextRecipe);
+                }
+            }
+            bakeRecipe(dataUrl, nextRecipe);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const loadLab11Sample = async (type: string) => {
+        if (!type) return;
+        const fileMap: Record<string, string> = {
+            'gps': '/samples/exif/lab11_gps_metadata.jpg',
+            'camera': '/samples/exif/lab11_camera_metadata.jpg',
+            'opsec': '/samples/exif/lab11_opsec_scenario.jpg',
+            'clean': '/samples/exif/lab11_no_exif_control.jpg'
+        };
+        const url = fileMap[type];
+        if (!url) return;
+
+        try {
+            const res = await fetch(url);
+            const blob = await res.blob();
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const dataUrl = ev.target?.result as string;
+                setInput(dataUrl);
+                const exifOp = operationsCatalog.find(o => o.id === 'extract_exif');
+                let newRecipe: RecipeItemInstance[] = [];
+                if (exifOp) {
+                    newRecipe = [{
+                        instanceId: 'op_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                        catalogId: exifOp.id,
+                        name: exifOp.name,
+                        cat: exifOp.cat,
+                        desc: exifOp.desc,
+                        argsDef: exifOp.args || [],
+                        args: { showGpsOnly: false, generateMapUrl: true, opsecAuditMode: true },
+                        isExpanded: true,
+                        isEnabled: true,
+                        getSignature: exifOp.getSignature,
+                        run: exifOp.run,
+                        runAsync: exifOp.runAsync
+                    }];
+                }
+                setActiveRecipe(newRecipe);
+                bakeRecipe(dataUrl, newRecipe);
+            };
+            reader.readAsDataURL(blob);
+        } catch (err) {
+            console.error('Failed to load sample image:', err);
+        }
     };
 
     const copyOutput = () => {
@@ -653,6 +956,12 @@ export default function CyberChefDrawer({ isOpen, onClose, initialInput = '' }: 
                         className={`px-2 py-0.5 rounded font-bold transition ${activeCategory === 'triage' ? 'bg-cyan-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
                     >
                         Triage
+                    </button>
+                    <button
+                        onClick={() => setActiveCategory('forensics')}
+                        className={`px-2 py-0.5 rounded font-bold transition ${activeCategory === 'forensics' ? 'bg-cyan-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
+                    >
+                        Forensics
                     </button>
                 </div>
 
@@ -817,19 +1126,45 @@ export default function CyberChefDrawer({ isOpen, onClose, initialInput = '' }: 
             <div className="flex-1 flex flex-col min-h-0 bg-slate-950 p-4 space-y-3 overflow-y-auto">
                 {/* Input Area */}
                 <div className="flex-1 flex flex-col min-h-[120px]">
-                    <div className="flex items-center justify-between pb-1.5 text-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-1 pb-1.5 text-xs">
                         <span className="text-slate-400 font-bold uppercase tracking-wider text-[11px]">Input Payload</span>
-                        <button
-                            onClick={() => handleInputChange('')}
-                            className="text-slate-500 hover:text-slate-300 text-[10px]"
-                        >
-                            Clear
-                        </button>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                accept="image/*,.jpg,.jpeg,.png,.bin"
+                                onChange={handleFileUpload}
+                                className="hidden"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => fileInputRef.current?.click()}
+                                className="text-[10px] px-2 py-0.5 rounded bg-emerald-950/70 border border-emerald-700/60 text-emerald-300 hover:bg-emerald-900 transition flex items-center gap-1"
+                            >
+                                📁 Open Image
+                            </button>
+                            <select
+                                onChange={(e) => { loadLab11Sample(e.target.value); e.target.selectedIndex = 0; }}
+                                className="text-[10px] px-2 py-0.5 rounded bg-amber-950/70 border border-amber-700/60 text-amber-300 hover:bg-amber-900 cursor-pointer focus:outline-none"
+                            >
+                                <option value="">Lab 11 EXIF Samples...</option>
+                                <option value="gps">Lab 11: GPS Coordinates</option>
+                                <option value="camera">Lab 11: Camera Metadata</option>
+                                <option value="opsec">Lab 11: OPSEC Scenario</option>
+                                <option value="clean">Lab 11: Clean Control (No-EXIF)</option>
+                            </select>
+                            <button
+                                onClick={() => handleInputChange('')}
+                                className="text-slate-500 hover:text-slate-300 text-[10px] px-1"
+                            >
+                                Clear
+                            </button>
+                        </div>
                     </div>
                     <textarea
                         value={input}
                         onChange={(e) => handleInputChange(e.target.value)}
-                        placeholder="Paste or type raw forensic text, hex bytes, or base64 token..."
+                        placeholder="Paste or type raw forensic text, hex bytes, base64 token, or select an EXIF sample..."
                         className="flex-1 w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-cyan-500 font-mono resize-none"
                     />
                 </div>

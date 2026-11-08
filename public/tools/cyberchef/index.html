@@ -78,6 +78,7 @@
             </div>
             <div class="p-2 border-b border-slate-800 flex flex-wrap gap-1 text-[10px]">
                 <button onclick="filterCategory('all')" class="cat-btn px-2 py-0.5 rounded bg-cyan-600 text-white font-bold">All</button>
+                <button onclick="filterCategory('Forensics / Metadata')" class="cat-btn px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium">Forensics</button>
                 <button onclick="filterCategory('Data Format')" class="cat-btn px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium">Encoding</button>
                 <button onclick="filterCategory('Hashing')" class="cat-btn px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium">Hashing</button>
                 <button onclick="filterCategory('Network / Triage')" class="cat-btn px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium">Network</button>
@@ -124,10 +125,21 @@
         <div class="md:col-span-5 flex flex-col">
             <!-- Input Half -->
             <div class="flex-1 flex flex-col border-b border-slate-800">
-                <div class="px-3 py-2 bg-slate-900/60 border-b border-slate-800 flex items-center justify-between text-xs">
-                    <span class="font-bold text-slate-300 uppercase tracking-wider">Input</span>
+                <div class="px-3 py-2 bg-slate-900/60 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
                     <div class="flex items-center gap-2">
+                        <span class="font-bold text-slate-300 uppercase tracking-wider">Input</span>
                         <span id="inputLen" class="text-[10px] text-slate-500">0 bytes</span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        <input type="file" id="filePicker" accept="image/*,.jpg,.jpeg,.png,.bin" onchange="handleFileSelected(this.files[0])" class="hidden">
+                        <button onclick="document.getElementById('filePicker').click()" class="text-[10px] px-2 py-0.5 rounded bg-emerald-950/70 border border-emerald-700/60 text-emerald-300 hover:bg-emerald-900 transition flex items-center gap-1">📁 Open Image</button>
+                        <select onchange="loadLab11Sample(this.value); this.selectedIndex=0;" class="text-[10px] px-2 py-0.5 rounded bg-amber-950/70 border border-amber-700/60 text-amber-300 hover:bg-amber-900 cursor-pointer focus:outline-none">
+                            <option value="">Lab 11 EXIF Samples...</option>
+                            <option value="gps">Lab 11: GPS Coordinates</option>
+                            <option value="camera">Lab 11: Camera Metadata</option>
+                            <option value="opsec">Lab 11: OPSEC Scenario</option>
+                            <option value="clean">Lab 11: Clean Control (No-EXIF)</option>
+                        </select>
                         <button onclick="loadSample('base64_hex')" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">Sample: Hex+B64</button>
                         <button onclick="loadSample('xor')" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">Sample: XOR</button>
                         <button onclick="loadSample('defang')" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">Sample: URL</button>
@@ -137,7 +149,7 @@
                 <textarea 
                     id="inputArea" 
                     oninput="updateInputLen(); maybeAutoBake();" 
-                    placeholder="Enter or paste raw input here..." 
+                    placeholder="Enter or paste raw input here, drag and drop JPEG files, or select an EXIF sample..." 
                     class="flex-1 w-full bg-slate-950 p-3 text-xs text-slate-200 placeholder-slate-600 focus:outline-none resize-none font-mono"
                 ></textarea>
             </div>
@@ -633,6 +645,34 @@
                 args: [],
                 getSignature: () => `()`,
                 run: (str) => str.split('').reverse().join('')
+            },
+            {
+                id: 'extract_exif',
+                name: 'Extract EXIF',
+                cat: 'Forensics / Metadata',
+                desc: 'Extracts EXIF metadata, camera device info, timestamps, GPS coordinates, and OPSEC leak risks from JPEG images.',
+                args: [
+                    {
+                        name: 'showGpsOnly',
+                        label: 'Only GPS & Coordinates',
+                        type: 'boolean',
+                        value: false
+                    },
+                    {
+                        name: 'generateMapUrl',
+                        label: 'Generate Map URL',
+                        type: 'boolean',
+                        value: true
+                    },
+                    {
+                        name: 'opsecAuditMode',
+                        label: 'OPSEC Military Risk Audit',
+                        type: 'boolean',
+                        value: true
+                    }
+                ],
+                getSignature: (args) => `(${args.showGpsOnly ? 'true' : 'false'},${args.generateMapUrl !== false ? 'true' : 'false'},${args.opsecAuditMode !== false ? 'true' : 'false'})`,
+                run: (str, args) => parseAndFormatExif(str, args)
             }
         ];
 
@@ -1090,6 +1130,276 @@
             }
             updateInputLen();
             bake();
+        }
+
+        // EXIF Parser and Formatter
+        function parseAndFormatExif(input, args) {
+            args = args || {};
+            let u8 = null;
+            if (typeof input === 'string') {
+                let trimmed = input.trim();
+                if (trimmed.startsWith('data:')) {
+                    let b64 = trimmed.split(',')[1] || '';
+                    let bin = atob(b64);
+                    u8 = new Uint8Array(bin.length);
+                    for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+                } else if (/^[0-9a-fA-F\s]{50,}$/.test(trimmed)) {
+                    let clean = trimmed.replace(/\s+/g, '');
+                    let matches = clean.match(/.{1,2}/g) || [];
+                    u8 = new Uint8Array(matches.map(b => parseInt(b, 16)));
+                } else if (/^[A-Za-z0-9+/=]{100,}$/.test(trimmed.replace(/\s+/g, ''))) {
+                    try {
+                        let bin = atob(trimmed.replace(/\s+/g, ''));
+                        u8 = new Uint8Array(bin.length);
+                        for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+                    } catch (e) {
+                        u8 = null;
+                    }
+                }
+                
+                if (!u8) {
+                    u8 = new Uint8Array(input.length);
+                    for (let i = 0; i < input.length; i++) u8[i] = input.charCodeAt(i) & 0xFF;
+                }
+            } else if (input instanceof Uint8Array) {
+                u8 = input;
+            } else if (input instanceof ArrayBuffer) {
+                u8 = new Uint8Array(input);
+            }
+
+            if (!u8 || u8.length < 16) {
+                return '[-] Input data is empty or too short for JPEG EXIF analysis.';
+            }
+
+            if (u8[0] !== 0xFF || u8[1] !== 0xD8) {
+                return '[-] Not a valid JPEG stream (SOI marker 0xFFD8 not found at offset 0). Ensure input is a raw, hex, or base64-encoded JPEG image.';
+            }
+
+            let app1Offset = -1;
+            for (let i = 0; i < Math.min(u8.length - 10, 65536); i++) {
+                if (u8[i] === 0xFF && u8[i+1] === 0xE1) {
+                    if (u8[i+4] === 0x45 && u8[i+5] === 0x78 && u8[i+6] === 0x69 && u8[i+7] === 0x66 && u8[i+8] === 0x00 && u8[i+9] === 0x00) {
+                        app1Offset = i + 10;
+                        break;
+                    }
+                }
+            }
+
+            if (app1Offset === -1) {
+                return [
+                    '============================================================',
+                    '           EXIF METADATA EXTRACTION & OPSEC AUDIT           ',
+                    '============================================================',
+                    '[STATUS]          NO EXIF APP1 METADATA FOUND',
+                    '[CLASSIFICATION]  SANITIZED / CONTROL BASELINE',
+                    '------------------------------------------------------------',
+                    'Notice: No exchangeable image file format (EXIF) header detected.',
+                    'This image has been scrubbed or stripped of camera and GPS markers.',
+                    'OPSEC Assessment: PASS (Zero operational metadata leakage detected).'
+                ].join('\n');
+            }
+
+            const tiffStart = app1Offset;
+            const isLE = (u8[tiffStart] === 0x49 && u8[tiffStart+1] === 0x49);
+            const view = new DataView(u8.buffer, u8.byteOffset + tiffStart);
+
+            function read16(off) { return off + 2 <= view.byteLength ? view.getUint16(off, isLE) : 0; }
+            function read32(off) { return off + 4 <= view.byteLength ? view.getUint32(off, isLE) : 0; }
+
+            function readValue(off, type, count) {
+                if (type === 2) {
+                    let str = '';
+                    let valOff = count <= 4 ? off : read32(off);
+                    for (let j = 0; j < count; j++) {
+                        if (valOff + j >= view.byteLength) break;
+                        let code = view.getUint8(valOff + j);
+                        if (code === 0) break;
+                        str += String.fromCharCode(code);
+                    }
+                    return str.trim();
+                } else if (type === 3) {
+                    return read16(off);
+                } else if (type === 4) {
+                    return read32(off);
+                } else if (type === 5) {
+                    let valOff = read32(off);
+                    if (count === 1) {
+                        let num = read32(valOff);
+                        let den = read32(valOff + 4);
+                        return den === 0 ? 0 : num / den;
+                    } else {
+                        let rats = [];
+                        for (let k = 0; k < count; k++) {
+                            let num = read32(valOff + k * 8);
+                            let den = read32(valOff + k * 8 + 4);
+                            rats.push(den === 0 ? 0 : num / den);
+                        }
+                        return rats;
+                    }
+                }
+                return read32(off);
+            }
+
+            function readIFD(ifdOffset) {
+                let tags = {};
+                if (ifdOffset >= view.byteLength - 2) return tags;
+                let numEntries = read16(ifdOffset);
+                let cur = ifdOffset + 2;
+                for (let i = 0; i < numEntries; i++) {
+                    if (cur + 12 > view.byteLength) break;
+                    let tag = read16(cur);
+                    let type = read16(cur + 2);
+                    let count = read32(cur + 4);
+                    tags[tag] = readValue(cur + 8, type, count);
+                    cur += 12;
+                }
+                return tags;
+            }
+
+            let ifd0Offset = read32(4);
+            let ifd0 = readIFD(ifd0Offset);
+            let exifSub = ifd0[0x8769] ? readIFD(ifd0[0x8769]) : {};
+            let gpsSub = ifd0[0x8825] ? readIFD(ifd0[0x8825]) : {};
+
+            const lines = [
+                '============================================================',
+                '           EXIF METADATA EXTRACTION & OPSEC AUDIT           ',
+                '============================================================'
+            ];
+
+            if (!args.showGpsOnly) {
+                lines.push('[HARDWARE & CAPTURE DEVICE]');
+                lines.push(`  Make:              ${ifd0[0x010f] || 'N/A'}`);
+                lines.push(`  Model:             ${ifd0[0x0110] || 'N/A'}`);
+                lines.push(`  Software / OS:     ${ifd0[0x0131] || 'N/A'}`);
+                if (exifSub[0xa434]) lines.push(`  Lens Model:        ${exifSub[0xa434]}`);
+                lines.push('');
+                lines.push('[TEMPORAL METADATA]');
+                lines.push(`  File Date/Time:    ${ifd0[0x0132] || 'N/A'}`);
+                lines.push(`  Original Capture:  ${exifSub[0x9003] || ifd0[0x0132] || 'N/A'}`);
+                lines.push('');
+                lines.push('[ADMINISTRATIVE / IDENTITY]');
+                if (ifd0[0x013b]) lines.push(`  Artist / Operator: ${ifd0[0x013b]}`);
+                if (ifd0[0x8298]) lines.push(`  Copyright:         ${ifd0[0x8298]}`);
+                if (ifd0[0x010e]) lines.push(`  Description:       ${ifd0[0x010e]}`);
+                lines.push('');
+            }
+
+            const hasGps = gpsSub[1] && gpsSub[2] && gpsSub[3] && gpsSub[4];
+            lines.push('[GEOLOCATION (GPS) METADATA]');
+            if (hasGps) {
+                let latRef = gpsSub[1];
+                let latParts = Array.isArray(gpsSub[2]) ? gpsSub[2] : [0,0,0];
+                let lonRef = gpsSub[3];
+                let lonParts = Array.isArray(gpsSub[4]) ? gpsSub[4] : [0,0,0];
+
+                let latDec = latParts[0] + (latParts[1] / 60) + (latParts[2] / 3600);
+                if (latRef === 'S') latDec = -latDec;
+
+                let lonDec = lonParts[0] + (lonParts[1] / 60) + (lonParts[2] / 3600);
+                if (lonRef === 'W') lonDec = -lonDec;
+
+                lines.push(`  Latitude:          ${latParts[0]} deg ${latParts[1]}' ${latParts[2]}" ${latRef} (${latDec.toFixed(6)} deg)`);
+                lines.push(`  Longitude:         ${lonParts[0]} deg ${lonParts[1]}' ${lonParts[2]}" ${lonRef} (${lonDec.toFixed(6)} deg)`);
+                if (gpsSub[6]) lines.push(`  Altitude:          ${gpsSub[6]} meters`);
+                if (gpsSub[29]) lines.push(`  GPS Date:          ${gpsSub[29]}`);
+
+                if (args.generateMapUrl !== false) {
+                    lines.push(`  Google Maps:       https://www.google.com/maps?q=${latDec.toFixed(6)},${lonDec.toFixed(6)}`);
+                    lines.push(`  OpenStreetMap:     https://www.openstreetmap.org/?mlat=${latDec.toFixed(6)}&mlon=${lonDec.toFixed(6)}#map=16/${latDec.toFixed(6)}/${lonDec.toFixed(6)}`);
+                }
+            } else {
+                lines.push('  GPS Coordinates:   None (No geolocation coordinates recorded in EXIF)');
+            }
+
+            if (args.opsecAuditMode !== false) {
+                lines.push('');
+                lines.push('------------------------------------------------------------');
+                lines.push('[MILITARY OPSEC VULNERABILITY ASSESSMENT]');
+                if (hasGps) {
+                    lines.push('  [CRITICAL VULNERABILITY]: EXIF Geolocation coordinates present!');
+                    lines.push('  Threat: Adversary signals and imagery intelligence (IMINT/GEOINT)');
+                    lines.push('  can pin-point naval unit base coordinates, forward observation posts,');
+                    lines.push('  or patrol headquarters. Scrub metadata prior to transmission.');
+                } else if (ifd0[0x013b] || ifd0[0x010e]) {
+                    lines.push('  [MEDIUM VULNERABILITY]: Administrative or personnel identifiers leaked.');
+                    lines.push('  Threat: Unit personnel roster or office description exposed in header.');
+                } else {
+                    lines.push('  [SECURE]: No geolocation coordinates or personnel identifiers detected.');
+                }
+            }
+
+            return lines.join('\n');
+        }
+
+        // Handle File Open / Drag and Drop
+        function handleFileSelected(file) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('inputArea').value = e.target.result;
+                updateInputLen();
+                const hasExifOp = activeRecipe.some(op => op.id === 'extract_exif');
+                if (!hasExifOp) {
+                    const exifOp = OPERATIONS_CATALOG.find(o => o.id === 'extract_exif');
+                    if (exifOp) addOperation(exifOp, { showGpsOnly: false, generateMapUrl: true, opsecAuditMode: true });
+                }
+                maybeAutoBake();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Load Lab 11 Sample JPEGs
+        async function loadLab11Sample(type) {
+            if (!type) return;
+            const fileMap = {
+                'gps': '/samples/exif/lab11_gps_metadata.jpg',
+                'camera': '/samples/exif/lab11_camera_metadata.jpg',
+                'opsec': '/samples/exif/lab11_opsec_scenario.jpg',
+                'clean': '/samples/exif/lab11_no_exif_control.jpg'
+            };
+            const url = fileMap[type];
+            if (!url) return;
+
+            try {
+                const res = await fetch(url);
+                const blob = await res.blob();
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('inputArea').value = e.target.result;
+                    activeRecipe = [];
+                    const exifOp = OPERATIONS_CATALOG.find(o => o.id === 'extract_exif');
+                    if (exifOp) {
+                        addOperation(exifOp, { showGpsOnly: false, generateMapUrl: true, opsecAuditMode: true });
+                    }
+                    updateInputLen();
+                    bake();
+                };
+                reader.readAsDataURL(blob);
+            } catch (err) {
+                console.error('Failed to load sample image:', err);
+                alert('Could not load sample file: ' + url);
+            }
+        }
+
+        // Setup Drag and Drop on Input Area
+        const inputAreaEl = document.getElementById('inputArea');
+        if (inputAreaEl) {
+            inputAreaEl.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                inputAreaEl.classList.add('border-cyan-500', 'bg-slate-900');
+            });
+            inputAreaEl.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                inputAreaEl.classList.remove('border-cyan-500', 'bg-slate-900');
+            });
+            inputAreaEl.addEventListener('drop', (e) => {
+                e.preventDefault();
+                inputAreaEl.classList.remove('border-cyan-500', 'bg-slate-900');
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    handleFileSelected(e.dataTransfer.files[0]);
+                }
+            });
         }
 
         // Initialize on load
