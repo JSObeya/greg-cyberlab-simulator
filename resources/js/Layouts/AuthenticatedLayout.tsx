@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Dropdown from '@/Components/Dropdown';
 import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
+import PageSpinner from '@/Components/PageSpinner';
 import { Link, usePage } from '@inertiajs/react';
 import { PropsWithChildren, ReactNode } from 'react';
 import { ShieldCheck, Terminal, BookOpen, FileSpreadsheet, User, LogOut, Moon, Sun, ShieldAlert, Users, FlaskConical } from 'lucide-react';
@@ -35,6 +36,7 @@ export default function Authenticated({
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans transition-colors duration-200">
+            <PageSpinner />
             <nav className="border-b border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-40 shadow-xs">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-16 justify-between">

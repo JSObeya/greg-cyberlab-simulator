@@ -16,16 +16,23 @@ class RegistrationTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test_new_users_can_register(): void
+    public function test_new_users_can_register_and_are_pending_admin_approval(): void
     {
         $response = $this->post('/register', [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+            'name' => 'Test Cadet',
+            'email' => 'cadet@example.com',
+            'phone' => '+234 803 111 2233',
             'password' => 'password',
             'password_confirmation' => 'password',
         ]);
 
-        $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $this->assertGuest();
+        $response->assertRedirect(route('login'));
+        $response->assertSessionHas('status');
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'cadet@example.com',
+            'is_active' => false,
+        ]);
     }
 }

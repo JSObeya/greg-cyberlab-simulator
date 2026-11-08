@@ -73,6 +73,57 @@ export default function ProgrammesIndex({ programmes, coordinators, allUsers = [
     const [editingProgramme, setEditingProgramme] = useState<ProgrammeItem | null>(null);
     const [managingUsersProgramme, setManagingUsersProgramme] = useState<ProgrammeItem | null>(null);
     const [userSearchTerm, setUserSearchTerm] = useState('');
+    const [selectedProgIds, setSelectedProgIds] = useState<number[]>([]);
+    const [isProcessingBulk, setIsProcessingBulk] = useState(false);
+
+    const allProgIds = programmes.map((p) => p.id);
+    const isAllSelected = allProgIds.length > 0 && allProgIds.every((id) => selectedProgIds.includes(id));
+    const isSomeSelected = selectedProgIds.length > 0 && !isAllSelected;
+
+    const handleToggleSelectAll = () => {
+        if (isAllSelected) {
+            setSelectedProgIds([]);
+        } else {
+            setSelectedProgIds(allProgIds);
+        }
+    };
+
+    const handleToggleSelectOne = (id: number) => {
+        setSelectedProgIds((prev) =>
+            prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+        );
+    };
+
+    const handleDeleteProgramme = (prog: ProgrammeItem) => {
+        if (confirm(`Are you sure you want to delete academic programme "${prog.title}"?`)) {
+            router.delete(route('admin.programmes.destroy', prog.id));
+        }
+    };
+
+    const executeBulkAction = (action: string) => {
+        if (selectedProgIds.length === 0) return;
+
+        if (action === 'delete') {
+            if (!confirm(`Are you sure you want to delete ${selectedProgIds.length} selected programme card(s)?`)) {
+                return;
+            }
+        }
+
+        setIsProcessingBulk(true);
+        router.post(
+            route('admin.programmes.bulk-action'),
+            {
+                programme_ids: selectedProgIds,
+                action,
+            },
+            {
+                onFinish: () => {
+                    setIsProcessingBulk(false);
+                    setSelectedProgIds([]);
+                },
+            }
+        );
+    };
 
     // Form for Establishing a New Programme
     const createForm = useForm({
@@ -369,6 +420,90 @@ export default function ProgrammesIndex({ programmes, coordinators, allUsers = [
                     </form>
                 )}
 
+                {/* Sticky Bulk Action Bar for Programmes */}
+                {selectedProgIds.length > 0 && (
+                    <div className="sticky top-20 z-30 p-3.5 rounded-2xl bg-slate-900 dark:bg-slate-950 text-white border-2 border-blue-500 shadow-2xl flex flex-wrap items-center justify-between gap-3 animate-in slide-in-from-top-2 duration-200">
+                        <div className="flex items-center gap-2">
+                            <span className="px-2.5 py-1 rounded-lg bg-blue-600 text-white font-mono font-bold text-xs">
+                                {selectedProgIds.length} Selected
+                            </span>
+                            <span className="text-xs text-slate-300">
+                                Apply bulk action across all selected programme pathways:
+                            </span>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                            <button
+                                type="button"
+                                disabled={isProcessingBulk}
+                                onClick={() => executeBulkAction('activate')}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow-xs disabled:opacity-50"
+                            >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>Activate Selected</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                disabled={isProcessingBulk}
+                                onClick={() => executeBulkAction('deactivate')}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold transition shadow-xs disabled:opacity-50"
+                            >
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>Deactivate Selected</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                disabled={isProcessingBulk}
+                                onClick={() => executeBulkAction('delete')}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold transition shadow-xs disabled:opacity-50"
+                            >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Delete Selected</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setSelectedProgIds([])}
+                                className="p-1.5 text-slate-400 hover:text-white rounded-lg transition"
+                                title="Clear Selection"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Programmes Listing Header / Select All Toolbar */}
+                {programmes.length > 0 && (
+                    <div className="flex items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-2">
+                        <button
+                            type="button"
+                            onClick={handleToggleSelectAll}
+                            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 text-xs font-bold transition"
+                        >
+                            <input
+                                type="checkbox"
+                                checked={isAllSelected}
+                                ref={(input) => {
+                                    if (input) input.indeterminate = isSomeSelected;
+                                }}
+                                onChange={handleToggleSelectAll}
+                                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span>{isAllSelected ? 'Deselect All' : 'Select All Programmes'}</span>
+                        </button>
+
+                        <div className="text-xs text-slate-500">
+                            Showing <strong className="text-slate-900 dark:text-white">{programmes.length}</strong> academic programmes
+                            {selectedProgIds.length > 0 && (
+                                <span className="ml-2 text-blue-600 font-bold">({selectedProgIds.length} selected)</span>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* Programmes Listing */}
                 {programmes.length === 0 ? (
                     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 p-12 text-center space-y-4 shadow-xs">
@@ -390,14 +525,25 @@ export default function ProgrammesIndex({ programmes, coordinators, allUsers = [
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {programmes.map((prog) => {
                             const enrolledCount = prog.users_count ?? prog.users?.length ?? 0;
+                            const isSelected = selectedProgIds.includes(prog.id);
                             return (
                                 <div
                                     key={prog.id}
-                                    className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 sm:p-7 shadow-xs space-y-4 hover:border-blue-400 dark:hover:border-blue-500 transition group relative flex flex-col justify-between"
+                                    className={`rounded-2xl border p-6 sm:p-7 shadow-xs space-y-4 transition group relative flex flex-col justify-between ${
+                                        isSelected
+                                            ? 'bg-blue-50/70 dark:bg-blue-950/40 border-blue-500 shadow-blue-500/10'
+                                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-500'
+                                    }`}
                                 >
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between gap-2">
                                             <div className="flex items-center gap-2 flex-wrap">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={() => handleToggleSelectOne(prog.id)}
+                                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                                />
                                                 <span className="font-mono text-xs font-bold px-2.5 py-1 rounded bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
                                                     {prog.code || 'PRG'}
                                                 </span>
@@ -411,16 +557,26 @@ export default function ProgrammesIndex({ programmes, coordinators, allUsers = [
                                                 )}
                                             </div>
 
-                                            {/* Edit Button in Card Header */}
-                                            <button
-                                                type="button"
-                                                onClick={() => handleEditOpen(prog)}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-blue-900/50 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl text-xs font-bold transition shadow-xs"
-                                                title="Edit this academic programme"
-                                            >
-                                                <Pencil className="w-3.5 h-3.5" />
-                                                <span>Edit</span>
-                                            </button>
+                                            {/* Header Action Buttons: Edit and Delete */}
+                                            <div className="flex items-center gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleEditOpen(prog)}
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-blue-900/50 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl text-xs font-bold transition shadow-xs"
+                                                    title="Edit this academic programme"
+                                                >
+                                                    <Pencil className="w-3.5 h-3.5" />
+                                                    <span>Edit</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDeleteProgramme(prog)}
+                                                    className="p-1.5 bg-slate-100 hover:bg-red-50 dark:bg-slate-800 dark:hover:bg-red-950/50 text-slate-500 hover:text-red-600 rounded-xl transition shadow-xs"
+                                                    title="Delete this academic programme"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
                                         </div>
 
                                         <div>

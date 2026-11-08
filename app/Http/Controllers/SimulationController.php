@@ -4,15 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Enums\LabStatus;
 use App\Models\Attempt;
+use App\Models\Course;
 use App\Models\Laboratory;
 use App\Models\Programme;
+use App\Models\Scenario;
 use App\Services\Assessment\ScoringEngineService;
+use App\Services\Audit\AuditService;
 use App\Services\Simulation\AttemptWorkflowService;
 use App\Services\Simulation\TerminalEngineService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -101,6 +105,10 @@ class SimulationController extends Controller
             ->withCount('courses')
             ->get();
 
+        $courses = Course::select('id', 'title', 'code', 'programme_id')
+            ->orderBy('title')
+            ->get();
+
         $workspaces = [
             ['value' => 'kali_terminal', 'label' => 'Simulated Kali Terminal'],
             ['value' => 'phishing_analyzer', 'label' => 'Phishing Email Analysis'],
@@ -116,6 +124,7 @@ class SimulationController extends Controller
         return Inertia::render('Labs/Index', [
             'laboratories' => $labsWithProgress,
             'programmes' => $programmes,
+            'courses' => $courses,
             'workspaces' => $workspaces,
             'filters' => $request->only(['search', 'programme_id', 'difficulty', 'workspace']),
             'stats' => [
@@ -258,5 +267,162 @@ class SimulationController extends Controller
         if ($attempt->user_id !== $user->id && ! $user->isAdmin() && ! $user->isInstructor()) {
             abort(403, 'Unauthorized access to this simulation attempt.');
         }
+    }
+
+    /**
+     * Store a newly created laboratory (Admins only).
+     */
+    public function storeLab(Request $request): RedirectResponse
+    {
+        $user = Auth::user();
+        if (! $user->isAdmin()) {
+            abort(403, 'Unauthorized.');
+        }
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'course_id' => 'required|exists:courses,id',
+            'category' => 'required|string|max:50',
+            'difficulty' => 'required|in:beginner,intermediate,advanced',
+            'primary_workspace' => 'required|string|max:50',
+            'estimated_minutes' => 'required|integer|min:5|max:300',
+            'passing_score' => 'required|integer|min:10|max:100',
+            'scenario_background' => 'required|string',
+            'learning_objectives' => 'nullable|string',
+        ]);
+
+        $slug = Str::slug($validated['title']).'-'.Str::random(5);
+
+        $lab = Laboratory::create([
+            ...$validated,
+            'slug' => $slug,
+            'status' => LabStatus::PUBLISHED,
+            'version' => '1.0.0',
+            'safety_notice' => 'SAFETY NOTICE: This simulation executes entirely in an educational software sandbox.',
+            'safety_scope' => ['environment' => 'isolated_simulation'],
+            'instructions' => 'Follow scenario objectives and submit findings in the assessment tab.',
+            'tasks' => ['Complete investigation and review telemetry', 'Submit evidence into lab assessment'],
+            'expected_findings' => 'Trainee successfully audited and resolved the simulated indicators.',
+            'remediation_explanation' => 'Remediation completed according to security best practices.',
+        ]);
+
+        Scenario::create([
+            'laboratory_id' => $lab->id,
+            'title' => $lab->title.' Scenario',
+            'initial_state' => ['status' => 'initialized', 'tactical_mode' => 'active'],
+            'allowed_commands' => ['ls', 'cat', 'grep', 'sha256sum', 'clear'],
+        ]);
+
+        AuditService::record('laboratory_created', 'Laboratory', $lab->id, [
+            'title' => $lab->title,
+            'created_by' => $user->id,
+        ]);
+
+        return redirect()->back()->with('success', 'Laboratory created successfully.');
+    }
+
+    /**
+     * Update an existing laboratory (Admins only).
+     */
+    public function updateLab(Request $request, Laboratory $laboratory): RedirectResponse
+    {
+        $user = Auth::user();
+        if (! $user->isAdmin()) {
+            abort(403, 'Unauthorized.');
+        }
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'category' => 'required|string|max:50',
+            'difficulty' => 'required|in:beginner,intermediate,advanced',
+            'primary_workspace' => 'required|string|max:50',
+            'estimated_minutes' => 'required|integer|min:5|max:300',
+            'passing_score' => 'required|integer|min:10|max:100',
+            'scenario_background' => 'required|string',
+            'learning_objectives' => 'nullable|string',
+        ]);
+
+        $laboratory->update($validated);
+
+        AuditService::record('laboratory_updated', 'Laboratory', $laboratory->id, [
+            'title' => $laboratory->title,
+            'updated_by' => $user->id,
+        ]);
+
+        return redirect()->back()->with('success', 'Laboratory updated successfully.');
+    }
+
+    /**
+     * Delete a laboratory (Admins only).
+     */
+    public function destroyLab(Laboratory $laboratory): RedirectResponse
+    {
+        $user = Auth::user();
+        if (! $user->isAdmin()) {
+            abort(403, 'Unauthorized.');
+        }
+
+        $title = $laboratory->title;
+        $laboratory->delete();
+
+        AuditService::record('laboratory_deleted', 'Laboratory', $laboratory->id, [
+            'title' => $title,
+            'deleted_by' => $user->id,
+        ]);
+
+        return redirect()->back()->with('success', "Laboratory '{$title}' deleted successfully.");
+    }
+
+    /**
+     * Bulk actions for laboratories (Admins only).
+     */
+    public function bulkActionLab(Request $request): RedirectResponse
+    {
+        $user = Auth::user();
+        if (! $user->isAdmin()) {
+            abort(403, 'Unauthorized.');
+        }
+
+        $validated = $request->validate([
+            'lab_ids' => 'required|array|min:1',
+            'lab_ids.*' => 'exists:laboratories,id',
+            'action' => 'required|string|in:delete,set_difficulty,set_workspace',
+            'difficulty' => 'nullable|in:beginner,intermediate,advanced',
+            'workspace' => 'nullable|string',
+        ]);
+
+        $ids = $validated['lab_ids'];
+        $count = count($ids);
+
+        switch ($validated['action']) {
+            case 'delete':
+                Laboratory::whereIn('id', $ids)->delete();
+                $msg = "Successfully deleted {$count} laboratory card(s).";
+                break;
+            case 'set_difficulty':
+                if (empty($validated['difficulty'])) {
+                    return redirect()->back()->with('error', 'Please choose a target difficulty.');
+                }
+                Laboratory::whereIn('id', $ids)->update(['difficulty' => $validated['difficulty']]);
+                $msg = "Successfully updated difficulty for {$count} laboratory card(s).";
+                break;
+            case 'set_workspace':
+                if (empty($validated['workspace'])) {
+                    return redirect()->back()->with('error', 'Please choose a target workspace.');
+                }
+                Laboratory::whereIn('id', $ids)->update(['primary_workspace' => $validated['workspace']]);
+                $msg = "Successfully updated workspace for {$count} laboratory card(s).";
+                break;
+            default:
+                return redirect()->back()->with('error', 'Unknown bulk action.');
+        }
+
+        AuditService::record('laboratory_bulk_action', 'Laboratory', $user->id, [
+            'action' => $validated['action'],
+            'target_count' => $count,
+            'target_ids' => $ids,
+        ]);
+
+        return redirect()->back()->with('success', $msg);
     }
 }

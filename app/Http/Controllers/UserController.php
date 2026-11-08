@@ -39,7 +39,21 @@ class UserController extends Controller
             $query->where('role', $role);
         }
 
+        if ($status = $request->input('status')) {
+            if ($status === 'active') {
+                $query->where('is_active', true);
+            } elseif ($status === 'pending' || $status === 'inactive') {
+                $query->where('is_active', false);
+            }
+        }
+
         $users = $query->paginate(15)->withQueryString();
+
+        $stats = [
+            'total' => User::count(),
+            'active' => User::where('is_active', true)->count(),
+            'pending' => User::where('is_active', false)->count(),
+        ];
 
         $programmes = Programme::where('is_active', true)
             ->select('id', 'title', 'code')
@@ -48,7 +62,8 @@ class UserController extends Controller
 
         return Inertia::render('Admin/Users', [
             'users' => $users,
-            'filters' => $request->only(['search', 'role']),
+            'filters' => $request->only(['search', 'role', 'status']),
+            'stats' => $stats,
             'roles' => array_map(fn (UserRole $r) => ['value' => $r->value, 'label' => $r->label()], UserRole::cases()),
             'programmes' => $programmes,
         ]);
@@ -170,7 +185,110 @@ class UserController extends Controller
             'email' => $user->email,
         ]);
 
-        return redirect()->back()->with('success', 'User deactivated successfully.');
+        return redirect()->back()->with('success', 'User deleted successfully.');
+    }
+
+    /**
+     * Approve a pending user registration.
+     */
+    public function approve(User $user): RedirectResponse
+    {
+        $currentUser = Auth::user();
+        if (! $currentUser->isAdmin()) {
+            abort(403, 'Unauthorized.');
+        }
+
+        $user->update(['is_active' => true]);
+
+        // Update any pending programme status to active
+        foreach ($user->programmes as $prog) {
+            $user->programmes()->updateExistingPivot($prog->id, ['status' => 'active']);
+        }
+
+        AuditService::record('user_approved', 'User', $user->id, [
+            'email' => $user->email,
+            'approved_by' => $currentUser->id,
+        ]);
+
+        return redirect()->back()->with('success', "Account for {$user->name} has been approved and activated.");
+    }
+
+    /**
+     * Perform bulk operations on selected users (Approve, Activate, Deactivate, Delete, Change Role).
+     */
+    public function bulkAction(Request $request): RedirectResponse
+    {
+        $currentUser = Auth::user();
+        if (! $currentUser->isAdmin()) {
+            abort(403, 'Unauthorized.');
+        }
+
+        $validated = $request->validate([
+            'user_ids' => 'required|array|min:1',
+            'user_ids.*' => 'exists:users,id',
+            'action' => 'required|string|in:approve,activate,deactivate,delete,change_role,assign_programme',
+            'role' => 'nullable|string|in:super_admin,admin,instructor,trainee,auditor,academic_coordinator,teaching_assistant',
+            'programme_id' => 'nullable|exists:programmes,id',
+        ]);
+
+        // Prevent admin from deleting or deactivating themselves
+        $targetIds = array_values(array_filter($validated['user_ids'], fn ($id) => (int) $id !== $currentUser->id));
+
+        if (empty($targetIds)) {
+            return redirect()->back()->with('error', 'No valid target users selected (you cannot modify or delete your own active administrator account).');
+        }
+
+        $count = count($targetIds);
+
+        switch ($validated['action']) {
+            case 'approve':
+            case 'activate':
+                User::whereIn('id', $targetIds)->update(['is_active' => true]);
+                $message = "Successfully approved and activated {$count} user account(s).";
+                break;
+
+            case 'deactivate':
+                User::whereIn('id', $targetIds)->update(['is_active' => false]);
+                $message = "Successfully suspended / deactivated {$count} user account(s).";
+                break;
+
+            case 'delete':
+                User::whereIn('id', $targetIds)->delete();
+                $message = "Successfully deleted {$count} user account(s).";
+                break;
+
+            case 'change_role':
+                if (empty($validated['role'])) {
+                    return redirect()->back()->with('error', 'Please specify a target role.');
+                }
+                User::whereIn('id', $targetIds)->update(['role' => $validated['role']]);
+                $message = "Successfully updated role for {$count} user(s) to {$validated['role']}.";
+                break;
+
+            case 'assign_programme':
+                if (empty($validated['programme_id'])) {
+                    return redirect()->back()->with('error', 'Please select a programme to assign.');
+                }
+                $programme = Programme::findOrFail($validated['programme_id']);
+                $attach = [];
+                foreach ($targetIds as $id) {
+                    $attach[$id] = ['enrolled_at' => now(), 'status' => 'active'];
+                }
+                $programme->users()->syncWithoutDetaching($attach);
+                $message = "Successfully assigned {$count} user(s) to programme {$programme->code}.";
+                break;
+
+            default:
+                return redirect()->back()->with('error', 'Invalid action specified.');
+        }
+
+        AuditService::record('user_bulk_action', 'User', $currentUser->id, [
+            'action' => $validated['action'],
+            'target_count' => $count,
+            'target_ids' => $targetIds,
+        ]);
+
+        return redirect()->back()->with('success', $message);
     }
 
     /**

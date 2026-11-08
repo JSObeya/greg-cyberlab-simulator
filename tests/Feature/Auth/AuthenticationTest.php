@@ -42,6 +42,19 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_pending_user_cannot_authenticate_until_approved(): void
+    {
+        $user = User::factory()->pending()->create();
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertGuest();
+        $response->assertSessionHasErrors('email');
+    }
+
     public function test_users_can_logout(): void
     {
         $user = User::factory()->create();

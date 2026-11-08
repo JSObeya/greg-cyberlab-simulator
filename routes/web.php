@@ -79,6 +79,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/admin/programmes', [ProgrammeController::class, 'index'])->name('admin.programmes.index');
     Route::post('/admin/programmes', [ProgrammeController::class, 'store'])->name('admin.programmes.store');
     Route::put('/admin/programmes/{programme}', [ProgrammeController::class, 'update'])->name('admin.programmes.update');
+    Route::delete('/admin/programmes/{programme}', [ProgrammeController::class, 'destroy'])->name('admin.programmes.destroy');
+    Route::post('/admin/programmes/bulk-action', [ProgrammeController::class, 'bulkAction'])->name('admin.programmes.bulk-action');
     Route::post('/admin/programmes/{programme}/assign-users', [ProgrammeController::class, 'assignUsers'])->name('admin.programmes.assign-users');
     Route::delete('/admin/programmes/{programme}/users/{user}', [ProgrammeController::class, 'removeUser'])->name('admin.programmes.remove-user');
 
@@ -90,6 +92,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Simulation Lab Arena
     Route::get('/labs', [SimulationController::class, 'index'])->name('labs.index');
+    Route::post('/admin/laboratories', [SimulationController::class, 'storeLab'])->name('admin.labs.store');
+    Route::put('/admin/laboratories/{laboratory}', [SimulationController::class, 'updateLab'])->name('admin.labs.update');
+    Route::delete('/admin/laboratories/{laboratory}', [SimulationController::class, 'destroyLab'])->name('admin.labs.destroy');
+    Route::post('/admin/laboratories/bulk-action', [SimulationController::class, 'bulkActionLab'])->name('admin.labs.bulk-action');
+
     Route::get('/labs/{laboratory:slug}', [SimulationController::class, 'show'])->name('simulation.show');
     Route::post('/attempts/{attempt}/command', [SimulationController::class, 'executeCommand'])
         ->middleware('throttle:60,1')
@@ -109,6 +116,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // User & Credential Management (Admins)
     Route::get('/admin/users', [UserController::class, 'index'])->name('admin.users.index');
     Route::post('/admin/users', [UserController::class, 'store'])->name('admin.users.store');
+    Route::post('/admin/users/bulk-action', [UserController::class, 'bulkAction'])->name('admin.users.bulk-action');
+    Route::post('/admin/users/{user}/approve', [UserController::class, 'approve'])->name('admin.users.approve');
     Route::post('/admin/users/import-csv', [UserController::class, 'importCsv'])->name('admin.users.import-csv');
     Route::get('/admin/users/sample-csv', [UserController::class, 'downloadSampleCsv'])->name('admin.users.sample-csv');
     Route::put('/admin/users/{user}', [UserController::class, 'update'])->name('admin.users.update');

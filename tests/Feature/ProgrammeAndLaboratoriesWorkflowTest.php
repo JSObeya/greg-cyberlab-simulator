@@ -178,4 +178,111 @@ class ProgrammeAndLaboratoriesWorkflowTest extends TestCase
             $this->assertGreaterThanOrEqual(2, $lab->questions()->count());
         }
     }
+
+    public function test_admin_can_approve_pending_user_and_perform_bulk_actions(): void
+    {
+        $admin = User::factory()->create(['role' => UserRole::SUPER_ADMIN]);
+        $pendingUser = User::factory()->pending()->create(['name' => 'Cadet Pending']);
+        $trainee2 = User::factory()->create(['role' => UserRole::TRAINEE, 'is_active' => true]);
+
+        // Single approval
+        $response = $this->actingAs($admin)->post(route('admin.users.approve', $pendingUser->id));
+        $response->assertRedirect();
+        $this->assertDatabaseHas('users', [
+            'id' => $pendingUser->id,
+            'is_active' => true,
+        ]);
+
+        // Bulk deactivate
+        $response = $this->actingAs($admin)->post(route('admin.users.bulk-action'), [
+            'user_ids' => [$pendingUser->id, $trainee2->id],
+            'action' => 'deactivate',
+        ]);
+        $response->assertRedirect();
+        $this->assertDatabaseHas('users', ['id' => $pendingUser->id, 'is_active' => false]);
+        $this->assertDatabaseHas('users', ['id' => $trainee2->id, 'is_active' => false]);
+
+        // Bulk approve/activate
+        $response = $this->actingAs($admin)->post(route('admin.users.bulk-action'), [
+            'user_ids' => [$pendingUser->id, $trainee2->id],
+            'action' => 'approve',
+        ]);
+        $response->assertRedirect();
+        $this->assertDatabaseHas('users', ['id' => $pendingUser->id, 'is_active' => true]);
+        $this->assertDatabaseHas('users', ['id' => $trainee2->id, 'is_active' => true]);
+    }
+
+    public function test_admin_can_create_update_delete_and_bulk_manage_laboratories(): void
+    {
+        $admin = User::factory()->create(['role' => UserRole::ADMIN]);
+
+        $programme = Programme::create([
+            'title' => 'Naval Provost Cyber Intelligence',
+            'slug' => 'naval-provost-cyber-intelligence',
+            'code' => 'NP-CI-2026',
+            'department' => 'Naval Provost',
+            'duration' => '3 Weeks',
+            'delivery_mode' => 'hybrid',
+            'is_active' => true,
+        ]);
+
+        $course = Course::create([
+            'programme_id' => $programme->id,
+            'title' => 'Tactical Forensics',
+            'slug' => 'tactical-forensics',
+            'code' => 'TF-101',
+            'is_published' => true,
+        ]);
+
+        // 1. Create Lab
+        $response = $this->actingAs($admin)->post(route('admin.labs.store'), [
+            'title' => 'NP-LAB 13: Tactical DNS Threat Hunting',
+            'course_id' => $course->id,
+            'category' => 'tactical_cyber',
+            'difficulty' => 'intermediate',
+            'primary_workspace' => 'kali_terminal',
+            'estimated_minutes' => 45,
+            'passing_score' => 80,
+            'scenario_background' => 'Hunting DNS tunneling in naval tactical communications.',
+        ]);
+        $response->assertRedirect();
+
+        $lab = Laboratory::where('title', 'NP-LAB 13: Tactical DNS Threat Hunting')->first();
+        $this->assertNotNull($lab);
+
+        // 2. Update Lab
+        $response = $this->actingAs($admin)->put(route('admin.labs.update', $lab->id), [
+            'title' => 'NP-LAB 13: Hardened Tactical DNS Hunting',
+            'category' => 'tactical_cyber',
+            'difficulty' => 'advanced',
+            'primary_workspace' => 'packet_inspector',
+            'estimated_minutes' => 50,
+            'passing_score' => 85,
+            'scenario_background' => 'Updated scenario background text.',
+        ]);
+        $response->assertRedirect();
+        $this->assertDatabaseHas('laboratories', [
+            'id' => $lab->id,
+            'title' => 'NP-LAB 13: Hardened Tactical DNS Hunting',
+            'difficulty' => 'advanced',
+            'primary_workspace' => 'packet_inspector',
+        ]);
+
+        // 3. Bulk Action Lab (Set Difficulty)
+        $response = $this->actingAs($admin)->post(route('admin.labs.bulk-action'), [
+            'lab_ids' => [$lab->id],
+            'action' => 'set_difficulty',
+            'difficulty' => 'beginner',
+        ]);
+        $response->assertRedirect();
+        $this->assertDatabaseHas('laboratories', [
+            'id' => $lab->id,
+            'difficulty' => 'beginner',
+        ]);
+
+        // 4. Delete Lab
+        $response = $this->actingAs($admin)->delete(route('admin.labs.destroy', $lab->id));
+        $response->assertRedirect();
+        $this->assertSoftDeleted('laboratories', ['id' => $lab->id]);
+    }
 }

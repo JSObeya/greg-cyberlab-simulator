@@ -169,4 +169,70 @@ class ProgrammeController extends Controller
 
         return redirect()->back()->with('success', "{$user->name} has been removed from this programme.");
     }
+
+    /**
+     * Delete an academic programme.
+     */
+    public function destroy(Programme $programme): RedirectResponse
+    {
+        $currentUser = Auth::user();
+        if (! $currentUser->isAdmin() && ! $currentUser->isAcademicCoordinator()) {
+            abort(403, 'Unauthorized.');
+        }
+
+        $title = $programme->title;
+        $programme->delete();
+
+        AuditService::record('programme_deleted', 'Programme', $programme->id, [
+            'title' => $title,
+            'deleted_by' => $currentUser->id,
+        ]);
+
+        return redirect()->back()->with('success', "Programme '{$title}' deleted successfully.");
+    }
+
+    /**
+     * Perform bulk operations on selected programmes.
+     */
+    public function bulkAction(Request $request): RedirectResponse
+    {
+        $currentUser = Auth::user();
+        if (! $currentUser->isAdmin() && ! $currentUser->isAcademicCoordinator()) {
+            abort(403, 'Unauthorized.');
+        }
+
+        $validated = $request->validate([
+            'programme_ids' => 'required|array|min:1',
+            'programme_ids.*' => 'exists:programmes,id',
+            'action' => 'required|string|in:delete,activate,deactivate',
+        ]);
+
+        $ids = $validated['programme_ids'];
+        $count = count($ids);
+
+        switch ($validated['action']) {
+            case 'delete':
+                Programme::whereIn('id', $ids)->delete();
+                $msg = "Successfully deleted {$count} programme card(s).";
+                break;
+            case 'activate':
+                Programme::whereIn('id', $ids)->update(['is_active' => true]);
+                $msg = "Successfully activated {$count} programme card(s).";
+                break;
+            case 'deactivate':
+                Programme::whereIn('id', $ids)->update(['is_active' => false]);
+                $msg = "Successfully deactivated {$count} programme card(s).";
+                break;
+            default:
+                return redirect()->back()->with('error', 'Invalid action.');
+        }
+
+        AuditService::record('programme_bulk_action', 'Programme', $currentUser->id, [
+            'action' => $validated['action'],
+            'target_count' => $count,
+            'target_ids' => $ids,
+        ]);
+
+        return redirect()->back()->with('success', $msg);
+    }
 }

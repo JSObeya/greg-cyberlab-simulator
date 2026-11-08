@@ -50,6 +50,15 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        $user = Auth::user();
+        if ($user && ! $user->is_active) {
+            Auth::logout();
+
+            throw ValidationException::withMessages([
+                'email' => 'Your account registration is currently pending Administrator approval. You will gain access once an administrator activates your account.',
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 
