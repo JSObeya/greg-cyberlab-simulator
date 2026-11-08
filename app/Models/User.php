@@ -91,6 +91,11 @@ class User extends Authenticatable
         return $this->hasMany(Attempt::class);
     }
 
+    public function quizAttempts(): HasMany
+    {
+        return $this->hasMany(QuizAttempt::class);
+    }
+
     public function badges(): BelongsToMany
     {
         return $this->belongsToMany(Badge::class, 'user_badges')->withPivot('awarded_at');

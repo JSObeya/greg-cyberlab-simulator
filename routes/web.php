@@ -8,6 +8,7 @@ use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\CourseWorkflowController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExamController;
 use App\Http\Controllers\GradebookController;
 use App\Http\Controllers\LearningResourceController;
 use App\Http\Controllers\ProfileController;
@@ -89,6 +90,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/cohorts', [CohortController::class, 'store'])->name('cohorts.store');
     Route::put('/cohorts/{cohort}', [CohortController::class, 'update'])->name('cohorts.update');
     Route::post('/cohorts/{cohort}/enroll', [CohortController::class, 'enroll'])->name('cohorts.enroll');
+
+    // MCQ Examination Engine, Bulk CSV Import, Result Analytics, and CSV Export
+    Route::get('/exams', [ExamController::class, 'index'])->name('exams.index');
+    Route::post('/exams', [ExamController::class, 'store'])->name('exams.store');
+    Route::put('/exams/{quiz}', [ExamController::class, 'update'])->name('exams.update');
+    Route::delete('/exams/{quiz}', [ExamController::class, 'destroy'])->name('exams.destroy');
+    Route::post('/exams/create-from-csv', [ExamController::class, 'createFromCsv'])->name('exams.create-from-csv');
+    Route::get('/exams/template-csv', [ExamController::class, 'downloadCsvTemplate'])->name('exams.template-csv');
+    Route::get('/exams/analytics', [ExamController::class, 'analytics'])->name('exams.analytics');
+    Route::get('/exams/export-results', [ExamController::class, 'exportResults'])->name('exams.export-results');
+
+    Route::get('/exams/{quiz}/questions', [ExamController::class, 'questions'])->name('exams.questions');
+    Route::post('/exams/{quiz}/questions', [ExamController::class, 'storeQuestion'])->name('exams.questions.store');
+    Route::put('/exams/{quiz}/questions/{question}', [ExamController::class, 'updateQuestion'])->name('exams.questions.update');
+    Route::delete('/exams/{quiz}/questions/{question}', [ExamController::class, 'destroyQuestion'])->name('exams.questions.destroy');
+    Route::post('/exams/{quiz}/import-csv', [ExamController::class, 'importCsv'])->name('exams.import-csv');
+
+    Route::get('/exams/{quiz}/take', [ExamController::class, 'take'])->name('exams.take');
+    Route::post('/exams/{quiz}/start', [ExamController::class, 'startAttempt'])->name('exams.start');
+    Route::post('/exams/attempts/{attempt}/autosave', [ExamController::class, 'autosave'])->name('exams.autosave');
+    Route::post('/exams/attempts/{attempt}/submit', [ExamController::class, 'submitAttempt'])->name('exams.submit');
+    Route::get('/exams/{quiz}/results/{attempt}', [ExamController::class, 'result'])->name('exams.result');
 
     // Simulation Lab Arena
     Route::get('/labs', [SimulationController::class, 'index'])->name('labs.index');

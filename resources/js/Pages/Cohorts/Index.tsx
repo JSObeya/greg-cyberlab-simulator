@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import {
     Users,
     Plus,
@@ -12,7 +12,9 @@ import {
     GraduationCap,
     Clock,
     Layers,
-    UserCheck
+    UserCheck,
+    CheckSquare,
+    BarChart3
 } from 'lucide-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
@@ -231,6 +233,29 @@ export default function CohortsIndex({
             <Head title="Cohorts & Enrolments - Greg Cyberlab" />
 
             <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+                {/* Cohorts & Assessments Submenu Tabs */}
+                <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+                    <button
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white shadow-xs"
+                    >
+                        <Users className="w-3.5 h-3.5" />
+                        <span>Cohorts Directory</span>
+                    </button>
+                    <Link
+                        href={route('exams.index')}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition"
+                    >
+                        <CheckSquare className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>MCQ Examinations</span>
+                    </Link>
+                    <Link
+                        href={route('exams.analytics')}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition"
+                    >
+                        <BarChart3 className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Result Analytics</span>
+                    </Link>
+                </div>
                 {/* Cohort Creation Form */}
                 {isCreating && (
                     <form onSubmit={handleCreateSubmit} className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-blue-200 dark:border-blue-900 shadow-md space-y-4">

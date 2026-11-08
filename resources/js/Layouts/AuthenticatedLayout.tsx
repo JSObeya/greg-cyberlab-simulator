@@ -5,7 +5,7 @@ import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import PageSpinner from '@/Components/PageSpinner';
 import { Link, usePage } from '@inertiajs/react';
 import { PropsWithChildren, ReactNode } from 'react';
-import { ShieldCheck, Terminal, BookOpen, FileSpreadsheet, User, LogOut, Moon, Sun, ShieldAlert, Users, FlaskConical } from 'lucide-react';
+import { ShieldCheck, Terminal, BookOpen, FileSpreadsheet, User, LogOut, Moon, Sun, ShieldAlert, Users, FlaskConical, ChevronDown, CheckSquare, BarChart3 } from 'lucide-react';
 
 export default function Authenticated({
     header,
@@ -95,15 +95,58 @@ export default function Authenticated({
                                     </NavLink>
                                 )}
 
-                                {(user.role === 'admin' || user.role === 'super_admin' || user.role === 'instructor' || user.role === 'academic_coordinator') && (
-                                    <NavLink
-                                        href={route('cohorts.index')}
-                                        active={route().current('cohorts.*')}
-                                        className="text-xs font-bold dark:text-slate-200"
-                                    >
-                                        Cohorts
-                                    </NavLink>
-                                )}
+                                {/* Cohorts & MCQ Examination Engine Submenu */}
+                                <div className="relative inline-flex items-center">
+                                    <Dropdown>
+                                        <Dropdown.Trigger>
+                                            <button
+                                                type="button"
+                                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition duration-150 ${
+                                                    route().current('cohorts.*') || route().current('exams.*')
+                                                        ? 'bg-indigo-500/10 text-indigo-400 font-black'
+                                                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800/60'
+                                                }`}
+                                            >
+                                                <Users className="w-3.5 h-3.5 text-indigo-400" />
+                                                <span>Cohorts</span>
+                                                <ChevronDown className="w-3 h-3 text-slate-400 opacity-70" />
+                                            </button>
+                                        </Dropdown.Trigger>
+                                        <Dropdown.Content align="left" width="64">
+                                            {(user.role === 'admin' || user.role === 'super_admin' || user.role === 'instructor' || user.role === 'academic_coordinator') && (
+                                                <Dropdown.Link href={route('cohorts.index')} className="flex items-start gap-2.5 py-2.5">
+                                                    <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 shrink-0">
+                                                        <Users className="w-4 h-4" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-bold text-slate-800 dark:text-slate-100">Cohort Directory</div>
+                                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">Manage class rosters, capacity & supervisors</div>
+                                                    </div>
+                                                </Dropdown.Link>
+                                            )}
+                                            <Dropdown.Link href={route('exams.index')} className="flex items-start gap-2.5 py-2.5">
+                                                <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 shrink-0">
+                                                    <CheckSquare className="w-4 h-4" />
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-slate-800 dark:text-slate-100">MCQ Examinations</div>
+                                                    <div className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">Assessments, live timed tests & CSV import</div>
+                                                </div>
+                                            </Dropdown.Link>
+                                            {(user.role === 'admin' || user.role === 'super_admin' || user.role === 'instructor' || user.role === 'academic_coordinator') && (
+                                                <Dropdown.Link href={route('exams.analytics')} className="flex items-start gap-2.5 py-2.5">
+                                                    <div className="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400 shrink-0">
+                                                        <BarChart3 className="w-4 h-4" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-bold text-slate-800 dark:text-slate-100">Result Analytics</div>
+                                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">Trainee performance, scores & CSV export</div>
+                                                    </div>
+                                                </Dropdown.Link>
+                                            )}
+                                        </Dropdown.Content>
+                                    </Dropdown>
+                                </div>
 
                                 {(user.role === 'admin' || user.role === 'super_admin') && (
                                     <NavLink
@@ -233,11 +276,24 @@ export default function Authenticated({
                         <ResponsiveNavLink href={route('courses.index')} active={route().current('courses.*')}>
                             Curriculum
                         </ResponsiveNavLink>
-                        {(user.role === 'admin' || user.role === 'super_admin' || user.role === 'instructor') && (
-                            <ResponsiveNavLink href={route('cohorts.index')} active={route().current('cohorts.*')}>
-                                Cohorts
+                        <div className="pt-2 pb-1 border-t border-slate-200 dark:border-slate-800">
+                            <div className="px-4 text-[10px] font-bold uppercase tracking-wider text-indigo-400 mb-1">
+                                Cohorts & Assessments
+                            </div>
+                            {(user.role === 'admin' || user.role === 'super_admin' || user.role === 'instructor' || user.role === 'academic_coordinator') && (
+                                <ResponsiveNavLink href={route('cohorts.index')} active={route().current('cohorts.*')}>
+                                    Cohort Directory
+                                </ResponsiveNavLink>
+                            )}
+                            <ResponsiveNavLink href={route('exams.index')} active={route().current('exams.index') || route().current('exams.take')}>
+                                MCQ Examinations
                             </ResponsiveNavLink>
-                        )}
+                            {(user.role === 'admin' || user.role === 'super_admin' || user.role === 'instructor' || user.role === 'academic_coordinator') && (
+                                <ResponsiveNavLink href={route('exams.analytics')} active={route().current('exams.analytics')}>
+                                    Result Analytics
+                                </ResponsiveNavLink>
+                            )}
+                        </div>
                         {(user.role === 'admin' || user.role === 'super_admin') && (
                             <ResponsiveNavLink href={route('admin.users.index')} active={route().current('admin.users.*')}>
                                 Users

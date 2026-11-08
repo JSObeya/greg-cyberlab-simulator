@@ -14,9 +14,14 @@ class Quiz extends Model
 
     protected $fillable = [
         'course_id',
+        'cohort_id',
+        'programme_id',
         'lesson_id',
         'title',
         'slug',
+        'description',
+        'category',
+        'exam_type',
         'instructions',
         'time_limit_minutes',
         'passing_score_percentage',
@@ -40,6 +45,16 @@ class Quiz extends Model
     public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
+    }
+
+    public function cohort(): BelongsTo
+    {
+        return $this->belongsTo(Cohort::class);
+    }
+
+    public function programme(): BelongsTo
+    {
+        return $this->belongsTo(Programme::class);
     }
 
     public function lesson(): BelongsTo

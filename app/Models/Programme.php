@@ -58,6 +58,11 @@ class Programme extends Model
             ->withTimestamps();
     }
 
+    public function quizzes(): HasMany
+    {
+        return $this->hasMany(Quiz::class);
+    }
+
     public function trainees(): BelongsToMany
     {
         return $this->users()->where('role', UserRole::TRAINEE);
