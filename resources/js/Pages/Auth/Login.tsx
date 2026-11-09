@@ -6,7 +6,7 @@ import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEventHandler, useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, ShieldCheck, UserPlus } from 'lucide-react';
 
 // Login Component with Show/Hide Password Toggle
 export default function Login({
@@ -36,8 +36,12 @@ export default function Login({
             <Head title="Log in" />
 
             {status && (
-                <div className="mb-4 text-sm font-medium text-green-600">
-                    {status}
+                <div className="mb-5 p-3.5 rounded-xl bg-emerald-950/70 border border-emerald-500/40 text-emerald-200 text-xs flex items-start gap-2.5 shadow-md shadow-emerald-950/40">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <div className="leading-relaxed">
+                        <span className="font-bold text-white block">Status Notification</span>
+                        <span>{status}</span>
+                    </div>
                 </div>
             )}
 
@@ -122,6 +126,19 @@ export default function Login({
                     <PrimaryButton className="ms-4" disabled={processing}>
                         Log in
                     </PrimaryButton>
+                </div>
+
+                <div className="mt-6 pt-5 border-t border-slate-800 text-center">
+                    <p className="text-xs text-slate-400 mb-2.5">
+                        New Cadet, Trainee, or Naval Provost Personnel?
+                    </p>
+                    <Link
+                        href={route('register')}
+                        className="w-full inline-flex justify-center items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600/20 to-teal-600/20 hover:from-emerald-600/30 hover:to-teal-600/30 border border-emerald-500/40 text-emerald-300 hover:text-emerald-200 font-bold text-xs transition shadow-sm"
+                    >
+                        <UserPlus className="w-4 h-4" />
+                        <span>Self-Register as Trainee / Cadet</span>
+                    </Link>
                 </div>
             </form>
         </GuestLayout>

@@ -16,7 +16,10 @@ import {
     ShieldAlert,
     CheckCircle2,
     Flame,
-    Zap
+    Zap,
+    UserPlus,
+    Clock,
+    ArrowRight
 } from 'lucide-react';
 
 export default function Welcome({
@@ -63,15 +66,22 @@ export default function Welcome({
                             <div className="flex items-center gap-2 sm:gap-3">
                                 <Link
                                     href={route('login')}
-                                    className="px-3.5 py-2 text-xs font-bold text-slate-300 hover:text-white transition"
+                                    className="px-3 py-2 text-xs font-bold text-slate-300 hover:text-white transition"
                                 >
                                     Sign In
                                 </Link>
                                 <Link
-                                    href={route('login')}
-                                    className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-blue-600/25 transition flex items-center gap-1.5"
+                                    href={route('register')}
+                                    className="px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/25 hover:shadow-emerald-600/40 transition flex items-center gap-1.5"
                                 >
-                                    Enter Lab Arena <ChevronRight className="w-4 h-4" />
+                                    <UserPlus className="w-4 h-4" />
+                                    <span>Trainee Registration</span>
+                                </Link>
+                                <Link
+                                    href={route('login')}
+                                    className="hidden sm:flex px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-blue-600/25 transition items-center gap-1.5"
+                                >
+                                    <span>Enter Arena</span> <ChevronRight className="w-4 h-4" />
                                 </Link>
                             </div>
                         )}
@@ -105,6 +115,15 @@ export default function Welcome({
                             <span>Launch Simulation Laboratories</span>
                             <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                         </Link>
+                        {!auth.user && (
+                            <Link
+                                href={route('register')}
+                                className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-xl shadow-emerald-600/25 hover:shadow-emerald-600/40 transition flex items-center gap-2 group border border-emerald-400/30"
+                            >
+                                <UserPlus className="w-4 h-4" />
+                                <span>Self-Register as Trainee</span>
+                            </Link>
+                        )}
                         <Link
                             href={auth.user ? route('courses.index') : route('login')}
                             className="px-6 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 hover:border-slate-700 font-bold text-sm transition flex items-center gap-2"
@@ -201,6 +220,85 @@ export default function Welcome({
                         <div className="space-y-1">
                             <div className="text-2xl font-black text-indigo-400">Mil-Spec & OPSEC</div>
                             <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Provost Aligned</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Cadet Admission & Self-Registration Flow */}
+            <section className="py-14 border-b border-slate-800/80 bg-gradient-to-b from-slate-950 via-slate-900/60 to-slate-950">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="rounded-3xl border border-emerald-500/30 bg-gradient-to-br from-slate-900/90 via-emerald-950/20 to-slate-950 p-6 sm:p-10 shadow-2xl shadow-emerald-950/20">
+                        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 pb-8 border-b border-slate-800/80">
+                            <div className="space-y-2 max-w-2xl">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-bold">
+                                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                                    <span>Academy Admission & Registration Directive</span>
+                                </div>
+                                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                                    Cadet Self-Registration with Administrator Approval
+                                </h2>
+                                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                                    All new trainees and naval security personnel can self-register online. In accordance with operational security regulations, newly created accounts remain inactive until vetted and activated by an academy Administrator.
+                                </p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3 shrink-0">
+                                <Link
+                                    href={route('register')}
+                                    className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm shadow-xl shadow-emerald-600/30 transition flex items-center gap-2"
+                                >
+                                    <UserPlus className="w-4 h-4" />
+                                    <span>Begin Trainee Self-Registration</span>
+                                </Link>
+                                <Link
+                                    href={route('login')}
+                                    className="px-5 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white font-bold text-xs sm:text-sm transition"
+                                >
+                                    Sign In to Active Account
+                                </Link>
+                            </div>
+                        </div>
+
+                        {/* 3-Step Lifecycle */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8">
+                            <div className="p-5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2.5">
+                                <div className="flex items-center justify-between">
+                                    <div className="w-8 h-8 rounded-xl bg-blue-600/20 text-blue-400 font-black text-sm flex items-center justify-center border border-blue-500/30">
+                                        01
+                                    </div>
+                                    <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-blue-950 text-blue-400 border border-blue-800/40">Step 1</span>
+                                </div>
+                                <h3 className="font-bold text-sm text-white">Online Trainee Registration</h3>
+                                <p className="text-xs text-slate-400 leading-relaxed">
+                                    Cadets fill out their profile, including official email, rank/cadet designation, and select their assigned training programme (e.g. Basic Cybersecurity & AI for Security Personnel).
+                                </p>
+                            </div>
+
+                            <div className="p-5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2.5">
+                                <div className="flex items-center justify-between">
+                                    <div className="w-8 h-8 rounded-xl bg-amber-600/20 text-amber-400 font-black text-sm flex items-center justify-center border border-amber-500/30">
+                                        02
+                                    </div>
+                                    <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-800/40">Step 2</span>
+                                </div>
+                                <h3 className="font-bold text-sm text-white">Administrator Vetting & Activation</h3>
+                                <p className="text-xs text-slate-400 leading-relaxed">
+                                    Registrations are placed in the <span className="text-amber-400 font-medium">Pending Approval</span> queue. Lead Instructors or Super Admins verify cadet identity and click <span className="text-emerald-400 font-medium">Approve</span> to activate the profile.
+                                </p>
+                            </div>
+
+                            <div className="p-5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2.5">
+                                <div className="flex items-center justify-between">
+                                    <div className="w-8 h-8 rounded-xl bg-emerald-600/20 text-emerald-400 font-black text-sm flex items-center justify-center border border-emerald-500/30">
+                                        03
+                                    </div>
+                                    <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800/40">Step 3</span>
+                                </div>
+                                <h3 className="font-bold text-sm text-white">Tactical Cyber Simulation Access</h3>
+                                <p className="text-xs text-slate-400 leading-relaxed">
+                                    The trainee logs in to launch their assigned simulation curriculum, practice in the 6 interactive workbenches, and take timed MCQ assessments with instant analytics.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -361,12 +459,19 @@ export default function Welcome({
                             <p className="text-xs text-slate-400 leading-relaxed">
                                 Greg Cyberlab Simulator is engineered by Greg & Co. ICT Limited to provide safe, browser-based hands-on cyber defense labs for trainees, military contingents, and cybersecurity apprentices across Nigeria and West Africa.
                             </p>
-                            <div className="pt-2">
+                            <div className="pt-2 flex flex-wrap items-center gap-3">
+                                <Link
+                                    href={route('register')}
+                                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition"
+                                >
+                                    <UserPlus className="w-4 h-4" />
+                                    <span>Trainee Self-Registration</span>
+                                </Link>
                                 <Link
                                     href={route('login')}
-                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md transition"
+                                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md transition"
                                 >
-                                    <span>Get Started in the Lab</span>
+                                    <span>Sign In to Arena</span>
                                     <ChevronRight className="w-4 h-4" />
                                 </Link>
                             </div>
@@ -377,7 +482,16 @@ export default function Welcome({
 
             {/* Footer */}
             <footer className="border-t border-slate-800/80 py-10 bg-slate-950 text-center text-xs text-slate-500">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-2">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-3">
+                    <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-semibold text-slate-400">
+                        <Link href={route('login')} className="hover:text-white transition">Sign In</Link>
+                        <span>•</span>
+                        <Link href={route('register')} className="text-emerald-400 hover:text-emerald-300 transition">Trainee Self-Registration</Link>
+                        <span>•</span>
+                        <Link href={route('courses.index')} className="hover:text-white transition">Academic Curriculum</Link>
+                        <span>•</span>
+                        <Link href={route('labs.index')} className="hover:text-white transition">Simulation Laboratories</Link>
+                    </div>
                     <p className="font-bold text-slate-400">Greg Cyberlab Simulator — Greg & Co. ICT Academy</p>
                     <p>Makurdi, Benue State, Nigeria • Built for Safe Hands-On Defensive Cybersecurity & AI Training</p>
                 </div>
